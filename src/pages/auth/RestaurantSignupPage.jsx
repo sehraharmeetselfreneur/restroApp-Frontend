@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
+
 import { FaUtensils, FaFileUpload, FaClock, FaUniversity, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus } from "react-icons/fa";
 import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdAccountBalance, MdDescription } from "react-icons/md";
 
@@ -391,19 +393,9 @@ const RestaurantSignupPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-8">
-            <div className="max-w-full flex">
-                {/* Header */}
-                <div className="text-center flex mb-12">
-                    {/* <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-red-500 bg-clip-text text-transparent mb-4">
-                        Join Our Restaurant Network
-                    </h1>
-                    <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                        Partner with us to reach thousands of customers and grow your business
-                    </p> */}
-                </div>
-
+            <div className="max-w-full flex gap-5">
                 {/* Main Content */}
-                <div className="flex gap-8 mt-5">
+                <div className="flex gap-5 mt-10">
                     {/* Left Sidebar - Vertical Steps (Sticky) */}
                     <VerticalStepNavigation 
                         currentStep={currentStep} 
@@ -411,8 +403,8 @@ const RestaurantSignupPage = () => {
                         onStepClick={handleStepClick}
                     />
 
-                    {/* Right Content - Scrollable Form */}
-                    <div className="flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 max-h-[95vh] overflow-y-auto">
+                    {/* Middle Content - Scrollable Form */}
+                    <div className="flex-1 bg-white rounded-2xl shadow-xl border border-slate-200  overflow-y-auto">
                         <div className="p-8 flex flex-col">
                             <div className="min-h-[63vh] min-w-3xl">
                                 {currentStep === 1 && (
@@ -667,7 +659,7 @@ const RestaurantSignupPage = () => {
 
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                                                 <h4 className="font-semibold text-green-800 mb-2">📸 Photo Tips</h4>
-                                                <ul className="text-green-700 text-sm space-y-1">
+                                                <ul className="text-green-700 text-sm grid grid-cols-2">
                                                     <li>• Use natural lighting for food photos</li>
                                                     <li>• Show your restaurant's atmosphere and ambiance</li>
                                                     <li>• Include photos of popular dishes</li>
@@ -679,13 +671,13 @@ const RestaurantSignupPage = () => {
                                 )}
 
                                 {currentStep === 4 && (
-                                    <div className="space-y-8">
+                                    <div className="space-y-4">
                                         <div className="border-b border-slate-200 pb-6">
                                             <h2 className="text-3xl font-bold text-slate-800 mb-2">Legal Documentation</h2>
                                             <p className="text-slate-600">Upload required licenses and certificates</p>
                                         </div>
 
-                                        <div className="space-y-6">
+                                        <div className="space-y-3">
                                             {/* License Numbers */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <input
@@ -704,7 +696,7 @@ const RestaurantSignupPage = () => {
                                                 />
                                             </div>
 
-                                            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                                                 <h4 className="font-semibold text-yellow-800 mb-2">📋 Required Documents</h4>
                                                 <div className="space-y-3">
                                                     {[
@@ -791,7 +783,7 @@ const RestaurantSignupPage = () => {
                                                 
                                                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                                     <h5 className="font-medium text-blue-800 mb-1">Upload Guidelines:</h5>
-                                                    <ul className="text-blue-700 text-xs space-y-1">
+                                                    <ul className="text-blue-700 grid grid-cols-2 text-xs space-y-1">
                                                         <li>• Accepted formats: PDF, JPEG, PNG</li>
                                                         <li>• Maximum file size: 5MB</li>
                                                         <li>• Ensure documents are clear and readable</li>
@@ -864,6 +856,14 @@ const RestaurantSignupPage = () => {
 
                             {/* Navigation Buttons */}
                             <div className="sticky bottom-0 bg-white border-t border-slate-200 flex justify-between items-center mt-12 pt-8">
+                                {currentStep === 1 && (
+                                    <Link to={"/restaurant-login"}
+                                        className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                    >
+                                        <span>Login here</span>
+                                    </Link>
+                                )}
+
                                 {currentStep > 1 ? (
                                     <button
                                         onClick={prevStep}
@@ -892,6 +892,29 @@ const RestaurantSignupPage = () => {
                                 )}
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Right Part */}
+                <div className="text-center w-full h-full flex flex-col justify-top mb-12 mt-15 animate-fade-in-up">
+                    {/* Website Name */}
+                    <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
+                        FlavorForge
+                    </h1>
+
+                    {/* Tagline */}
+                    <p className="text-lg text-slate-600 font-medium">
+                        Where your passion for food meets our network.
+                    </p>
+
+                    {/* Subtly animated decorative line */}
+                    <div className="w-16 h-1 bg-orange-300 mx-auto mt-4 rounded-full animate-pulse-slow"></div>
+
+                    <div className="mt-10 w-full">
+                        <img
+                            className="w-full h-[60vh] object-cover rounded-2xl"
+                            src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Q2hlZnxlbnwwfHwwfHx8MA%3D%3D" alt=""
+                        />
                     </div>
                 </div>
             </div>
