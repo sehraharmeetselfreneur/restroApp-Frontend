@@ -1,8 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 
-import { FaUtensils, FaFileUpload, FaClock, FaUniversity, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus } from "react-icons/fa";
-import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdAccountBalance, MdDescription } from "react-icons/md";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { registerRestaurant } from "../../api/restaurantApi";
+
+import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus } from "react-icons/fa";
+import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdDescription } from "react-icons/md";
+import toast from "react-hot-toast";
 
 const steps = [
     { 
@@ -123,6 +127,8 @@ const VerticalStepNavigation = ({ currentStep, steps, onStepClick }) => (
 );
 
 const RestaurantSignupPage = () => {
+    const queryClient = useQueryClient();
+
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         restaurantName: '',
@@ -159,6 +165,20 @@ const RestaurantSignupPage = () => {
         gst: null,
         pan: null
     });
+
+    // Mutation for registering restaurant
+    const registerRestaurantMutation = useMutation({
+        mutationFn: registerRestaurant,
+
+        onSuccess: () => {
+            toast.success("Restaurant registered successfully!");
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        },
+
+        onError: (error) => {
+            toast.error(error.response?.data?.message || "Something went wrong");
+        }
+    })
 
     const nextStep = () => {
         if (currentStep < steps.length) setCurrentStep(currentStep + 1);
@@ -322,37 +342,6 @@ const RestaurantSignupPage = () => {
                         }
                     }
                 }));
-
-                // Try to get address from coordinates using reverse geocoding
-                try {
-                    const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${import.meta.VITE_GEOCODE_API_KEY}`);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.results && data.results[0]) {
-                            const addressComponents = data.results[0].components;
-                            const formattedAddress = data.results[0].formatted;
-                            
-                            // Update address fields if they're empty
-                            setFormData(prev => ({
-                                ...prev,
-                                address: {
-                                    ...prev.address,
-                                    street: prev.address.street || `${addressComponents.house_number || ''} ${addressComponents.road || ''}`.trim(),
-                                    city: prev.address.city || addressComponents.city || addressComponents.town || addressComponents.village || '',
-                                    state: prev.address.state || addressComponents.state || '',
-                                    pincode: prev.address.pincode || addressComponents.postcode || '',
-                                    geoLocation: {
-                                        lat: latitude,
-                                        lng: longitude
-                                    }
-                                }
-                            }));
-                        }
-                    }
-                } catch (error) {
-                    console.log('Reverse geocoding failed, but location coordinates saved:', error);
-                }
                 
                 setLocationLoading(false);
                 alert(`Location captured successfully!\nLatitude: ${latitude.toFixed(6)}\nLongitude: ${longitude.toFixed(6)}`);
@@ -388,7 +377,7 @@ const RestaurantSignupPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Form Data: ", formData);
+        registerRestaurantMutation.mutate({ formData, documents });
     }
 
     return (
@@ -855,7 +844,7 @@ const RestaurantSignupPage = () => {
                             </div>
 
                             {/* Navigation Buttons */}
-                            <div className="sticky bottom-0 bg-white border-t border-slate-200 flex justify-between items-center mt-12 pt-8">
+                            <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-12 pt-8">
                                 {currentStep === 1 && (
                                     <Link to={"/restaurant-login"}
                                         className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -887,7 +876,7 @@ const RestaurantSignupPage = () => {
                                         className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                                     >
                                         <FaCheckCircle />
-                                        <span>Submit Application</span>
+                                        <span>{registerRestaurantMutation.isPending ? "Registering..." : "Submit Application"}</span>
                                     </button>
                                 )}
                             </div>

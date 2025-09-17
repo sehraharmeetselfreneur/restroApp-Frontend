@@ -1,12 +1,25 @@
+import { Route, Routes } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import useAuthStore from "./store/useAuthStore"
+//Zustand store
+import useAuthStore from "./store/useAuthStore";
+
+//API Calls
 import { getCustomerProfile } from "./api/customerApi";
 import { getRestaurantProfile } from "./api/restaurantApi";
-import { Route, Routes } from "react-router-dom";
+
+//PageLoader
+import PageLoader from "./components/PageLoader";
+
+//Auth Pages
 import RestaurantSignupPage from "./pages/auth/RestaurantSignupPage";
 import RestaurantLoginPage from "./pages/auth/RestaurantLoginPage";
+
+//Public Pages
 import HomePage from "./pages/HomePage";
+
+//Restaurant Pages
+import RestaurantDashboardPage from "./pages/restaurant/RestaurantDashboardPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -30,7 +43,7 @@ const App = () => {
     });
 
     if(customerQuery.isLoading || restaurantQuery.isFetching){
-        return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+        return <PageLoader />;
     }
 
     return (
@@ -43,6 +56,8 @@ const App = () => {
                 <Route path="/login" element={user ? <HomePage /> : <CustomerLoginPage />} /> */}
 
                 <Route path="/" element={<HomePage />} />
+
+                <Route path="/restaurant/dashboard" element={<RestaurantDashboardPage />} />
             </Routes>
         </div>
     )
