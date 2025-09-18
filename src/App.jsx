@@ -49,8 +49,8 @@ const App = () => {
     return (
         <div>
             <Routes>
-                <Route path="/restaurant-signup" element={user ? <HomePage /> : <RestaurantSignupPage />} />
-                <Route path="/restaurant-login" element={user ? <HomePage /> : <RestaurantLoginPage />} />
+                <Route path="/restaurant/signup" element={user ? <HomePage /> : <RestaurantSignupPage />} />
+                <Route path="/restaurant/login" element={user ? <HomePage /> : <RestaurantLoginPage />} />
 
                 {/* <Route path="/signup" element={user ? <HomePage /> : <CustomerSignupPage />} />
                 <Route path="/login" element={user ? <HomePage /> : <CustomerLoginPage />} /> */}

@@ -1,24 +1,127 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import validator from 'validator';
+import toast from "react-hot-toast";
 import { FaEnvelope, FaLock, FaKey, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { generateOtp, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
 
-const RestaurantLogin = () => {
+const RestaurantLoginPage = () => {
+    const queryClient = useQueryClient();
+
+    //Required mutations for login
+    const loginRestaurantMutation = useMutation({
+        mutationFn: loginRestaurant,
+        onSuccess: (data) => {
+            toast.success("Login successful");
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        }
+    })
+    const generateOtpMutation = useMutation({
+        mutationFn: generateOtp,
+        onSuccess: (data) => {
+            toast.success(data.message || "OTP sent successfully");
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || "Failed to send OTP");
+        }
+    });
+    const verifyOtpMutation = useMutation({
+        mutationFn: verifyOtp,
+        onSuccess: (data) => {
+            toast.success(data.message || "OTP verified successfully");
+            loginRestaurantMutation.mutate({ email: formData.email, password: formData.password });
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || "Invalid OTP")
+        }
+    })
+
     const heroImageUrl = "https://images.unsplash.com/photo-1551270273-df33a598c430";
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         email: "",
         password: "",
         otp: "",
     });
 
+    // Load saved form data from localStorage on mount
+    useEffect(() => {
+        const savedForm = localStorage.getItem("restaurantLoginForm");
+        if (savedForm) {
+            setFormData(JSON.parse(savedForm));
+        }
+    }, []);
+
     const handleChange = (field, value) => {
-        setFormData({ ...formData, [field]: value });
+        const updatedForm = { ...formData, [field]: value };
+        setFormData(updatedForm);
+        setErrors({ ...errors, [field]: "" });
+
+        localStorage.setItem("restaurantLoginForm", JSON.stringify(updatedForm));   // Save to localStorage
+    };
+
+    const validate = () => {
+        const newErrors = {};
+
+        // Email validation
+        if (!formData.email) {
+            newErrors.email = "Email is required";
+        }
+        else{
+            if(!validator.isEmail(formData.email)){
+                newErrors.email = "Enter a valid email address";
+            }
+            else{
+                const domain = (formData.email.split("@")[1] || "").toLowerCase();
+                const parts = domain.split(".");
+                if(parts.length >= 2 && parts[parts.length - 1] === parts[parts.length - 2]){
+                    newErrors.email = "Enter a valid email address";
+                }
+            }
+        }
+      
+        // Password validation
+        if(!formData.password){
+            newErrors.password = "Password is required";
+        }
+        else if(formData.password.length < 6){
+            newErrors.password = "Password must be at least 6 characters";
+        }
+      
+        // OTP validation
+        if(formData.otp && !/^\d{6}$/.test(formData.otp)){
+            newErrors.otp = "OTP must be a 6-digit number";
+        }
+      
+        return newErrors;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Login Data:", formData);
-        // 🔗 Call your login API here
+
+        //Validation check on submit
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            const firstError = Object.values(validationErrors)[0];
+            toast.error(firstError);
+            return;
+        }
+
+        verifyOtpMutation.mutate({ email: formData.email, otp: formData.otp }); //Verifying OTP, if verified, loginMutation will be called after the success
+        localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
     };
+
+    const handleGenerateOtp = () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+        if (!formData.email || !emailRegex.test(formData.email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
+
+        generateOtpMutation.mutate(formData.email);
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-between bg-gradient-to-br from-slate-500 via-white to-slate-400 relative overflow-hidden">
@@ -77,8 +180,8 @@ const RestaurantLogin = () => {
                         />
                         <button
                             type="button"
-                            onClick={() => console.log("Send OTP to", formData.email)}
-                            className="absolute cursor-pointer right-2 top-2 text-sm px-4 py-2 bg-slate-100 text-slate-600 rounded-lg shadow-sm hover:bg-slate-200 transition-colors duration-300 font-semibold"
+                            onClick={handleGenerateOtp}
+                            className="absolute cursor-pointer right-2 top-3 text-sm px-4 py-2 bg-slate-100 text-slate-600 rounded-lg shadow-sm hover:bg-orange-500 hover:text-white transition-colors duration-300 font-semibold"
                         >
                             Get OTP
                         </button>
@@ -99,7 +202,7 @@ const RestaurantLogin = () => {
                     <p>
                         Don’t have an account?{" "}
                         <Link
-                            to="/restaurant-signup"
+                            to="/restaurant/signup"
                             className="text-orange-600 cursor-pointer font-bold hover:underline hover:text-orange-700 transition"
                         >
                             Sign Up
@@ -149,4 +252,4 @@ const RestaurantLogin = () => {
     );
 };
 
-export default RestaurantLogin;
+export default RestaurantLoginPage;

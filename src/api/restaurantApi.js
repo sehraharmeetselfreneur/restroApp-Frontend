@@ -48,6 +48,39 @@ export const registerRestaurant = async ({ formData, documents }) => {
     }
 }
 
+export const generateOtp = async (email) => {
+    try{
+        const res = await axiosInstance.post('/api/restaurant/generate-otp', { email });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in generateOtp: ", err.message);
+        throw err;
+    }
+}
+
+export const verifyOtp = async ({ email, otp }) => {
+    try{
+        const res = await axiosInstance.post('/restaurant/verify-otp', { email, otp });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in verifyOtp: ", err.message);
+        throw err;
+    }
+}
+
+export const loginRestaurant = async (formData) => {
+    try{
+        const res = await axiosInstance.post('/restaurant/login', formData);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in loginRestaurant: ", err.message);
+        throw err;
+    }
+}
+
 export const getRestaurantProfile = async () => {
     try{
         const res = await axiosInstance.get("/restaurant/profile");
