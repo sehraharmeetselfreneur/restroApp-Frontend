@@ -20,15 +20,29 @@ import HomePage from "./pages/HomePage";
 
 //Restaurant Pages
 import RestaurantDashboardPage from "./pages/restaurant/RestaurantDashboardPage";
+import { useEffect, useState } from "react";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
+    const [authInitialized, setAuthInitialized] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAuthInitialized(true);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, []);
 
     const customerQuery = useQuery({
         queryKey: ["customerProfile"],
         queryFn: getCustomerProfile,
-        enabled: !user,
+        enabled: authInitialized && !user,
         retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        staleTime: Infinity,
+        cacheTime: Infinity,
         onSuccess: (data) => setUser(data, "customer"),
         onError: () => restaurantQuery.refetch()
     });
@@ -38,11 +52,15 @@ const App = () => {
         queryFn: getRestaurantProfile,
         enabled: false,
         retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        staleTime: Infinity,
+        cacheTime: Infinity,
         onSuccess: (data) => setUser(data, "restaurant"),
         onError: () => clearUser()
     });
 
-    if(customerQuery.isLoading || restaurantQuery.isFetching){
+    if(!authInitialized || customerQuery.isLoading || restaurantQuery.isFetching){
         return <PageLoader />;
     }
 

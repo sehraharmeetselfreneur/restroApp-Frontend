@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,115 +41,181 @@ const steps = [
     },
 ];
 
-const VerticalStepNavigation = ({ currentStep, steps, onStepClick }) => (
-    <div className="w-80 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl sticky top-8 h-fit">
-        <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Partner Registration</h2>
-            <p className="text-slate-400 text-sm">Complete all steps to join our platform</p>
-        </div>
-        
-        <div className="space-y-1">
-            {steps.map((step, index) => (
-                <div key={step.id}>
-                    <div
-                        onClick={() => onStepClick && onStepClick(step.id)}
-                        className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 ${
-                            currentStep === step.id
-                                ? "bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30"
-                                : currentStep > step.id
-                                ? "bg-green-500/20 hover:bg-green-500/30"
-                                : "hover:bg-slate-700/50"
-                        }`}
-                    >
-                        <div className="flex items-center space-x-4">
-                            <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+// ---------------- VALIDATION HELPERS ----------------
+const validateStep1 = (data) => {
+    const errors = {};
+    if (!data.restaurantName?.trim()) errors.restaurantName = "Restaurant name is required";
+    if (!data.email?.trim()) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.email = "Enter a valid email";
+    if (!data.phone?.trim()) errors.phone = "Phone number is required";
+    else if (!/^[6-9]\d{9}$/.test(data.phone)) errors.phone = "Enter a valid 10-digit phone";
+    if (data.cuisines.length === 0) errors.cuisines = "At least one cuisine is required";
+    return errors;
+};
+const validateStep2 = (address) => {
+    const errors = {};
+    if (!address.street?.trim()) errors.street = "Street is required";
+    if (!address.city?.trim()) errors.city = "City is required";
+    if (!address.state?.trim()) errors.state = "State is required";
+    if (!address.pincode?.trim()) errors.pincode = "Pincode is required";
+    else if (!/^\d{6}$/.test(address.pincode)) errors.pincode = "Enter a valid 6-digit pincode";
+    return errors;
+};
+const validateStep3 = (images) => {
+    const errors = {};
+    if (images.length === 0) errors.images = "At least one image is required";
+    return errors;
+};
+const validateStep4 = (documents, formData) => {
+    const errors = {};
+    
+    if (!formData.licenseNumber.fssai) {
+        errors.fssai = "FSSAI License Number is required";
+    }
+    else if (!/^[1-5]\d{13}$/.test(formData.licenseNumber.fssai)) {
+        errors.fssai = "Enter a valid 14-digit FSSAI License Number";
+    }
+    if (!formData.licenseNumber.gst) {
+        errors.gst = "GST Number is required";
+    }
+    else if (!/^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.licenseNumber.gst)) {
+        errors.gst = "Enter a valid 15-character GST Number";
+    }
+    if (!documents.fssaiLicense) errors.fssaiLicense = "FSSAI License upload is required";
+    if (!documents.gstCertificate) errors.gstCertificate = "GST Certificate upload is required";
+    if (!documents.panCard) errors.panCard = "PAN Card upload is required";
+    return errors;
+};
+
+const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurrentStep  }) => {
+    const handleStepClick = (stepId) => {
+        if (validateCurrentStep) {
+            const errors = validateCurrentStep();
+            if (Object.keys(errors).length > 0) {
+                toast.error(Object.values(errors)[0]);
+                return;
+            }
+        }
+        if (onStepClick) onStepClick(stepId);
+    };
+
+    return(
+        <div className="w-80 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 py-11 rounded-2xl shadow-2xl sticky top-8 h-fit">
+            <div className="mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Partner Registration</h2>
+                <p className="text-slate-400 text-sm">Complete all steps to join our platform</p>
+            </div>
+
+            <div className="space-y-1">
+                {steps.map((step, index) => (
+                    <div key={step.id}>
+                        <div
+                            onClick={() => handleStepClick(step.id)}
+                            className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 ${
                                 currentStep === step.id
-                                    ? "bg-white text-orange-600 shadow-md"
+                                    ? "bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30"
                                     : currentStep > step.id
-                                    ? "bg-green-500 text-white"
-                                    : "bg-slate-700 text-slate-400 group-hover:bg-slate-600 group-hover:text-slate-300"
-                            }`}>
-                                {currentStep > step.id ? (
-                                    <FaCheckCircle className="w-5 h-5" />
-                                ) : (
-                                    <div className="text-lg">{step.icon}</div>
-                                )}
-                            </div>
-                            <div className="flex-1">
-                                <h3 className={`font-semibold text-sm transition-colors duration-300 ${
+                                    ? "bg-green-500/20 hover:bg-green-500/30"
+                                    : "hover:bg-slate-700/50"
+                            }`}
+                        >
+                            <div className="flex items-center space-x-4">
+                                <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
                                     currentStep === step.id
-                                        ? "text-white"
+                                        ? "bg-white text-orange-600 shadow-md"
                                         : currentStep > step.id
-                                        ? "text-green-200"
-                                        : "text-slate-300 group-hover:text-white"
+                                        ? "bg-green-500 text-white"
+                                        : "bg-slate-700 text-slate-400 group-hover:bg-slate-600 group-hover:text-slate-300"
                                 }`}>
-                                    {step.label}
-                                </h3>
-                                <p className={`text-xs mt-1 transition-colors duration-300 ${
-                                    currentStep === step.id
-                                        ? "text-orange-100"
-                                        : currentStep > step.id
-                                        ? "text-green-300"
-                                        : "text-slate-500 group-hover:text-slate-400"
-                                }`}>
-                                    {step.description}
-                                </p>
+                                    {currentStep > step.id ? (
+                                        <FaCheckCircle className="w-5 h-5" />
+                                    ) : (
+                                        <div className="text-lg">{step.icon}</div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className={`font-semibold text-sm transition-colors duration-300 ${
+                                        currentStep === step.id
+                                            ? "text-white"
+                                            : currentStep > step.id
+                                            ? "text-green-200"
+                                            : "text-slate-300 group-hover:text-white"
+                                    }`}>
+                                        {step.label}
+                                    </h3>
+                                    <p className={`text-xs mt-1 transition-colors duration-300 ${
+                                        currentStep === step.id
+                                            ? "text-orange-100"
+                                            : currentStep > step.id
+                                            ? "text-green-300"
+                                            : "text-slate-500 group-hover:text-slate-400"
+                                    }`}>
+                                        {step.description}
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                                
+                        {/* Connection Line */}
+                        {index < steps.length - 1 && (
+                            <div className={`ml-9 h-6 w-0.5 transition-colors duration-500 ${
+                                currentStep > step.id ? "bg-green-500" : "bg-slate-700"
+                            }`} />
+                        )}
                     </div>
-                    
-                    {/* Connection Line */}
-                    {index < steps.length - 1 && (
-                        <div className={`ml-9 h-6 w-0.5 transition-colors duration-500 ${
-                            currentStep > step.id ? "bg-green-500" : "bg-slate-700"
-                        }`} />
-                    )}
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
 
-        <div className="mt-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-            <div className="flex items-center space-x-2 mb-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                <span className="text-slate-300 text-sm font-medium">Progress</span>
+            <div className="mt-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                    <span className="text-slate-300 text-sm font-medium">Progress</span>
+                </div>
+                <div className="bg-slate-700 rounded-full h-2 mb-2">
+                    <div 
+                        className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                    />
+                </div>
+                <p className="text-slate-400 text-xs">
+                    Step {currentStep} of {steps.length} completed
+                </p>
             </div>
-            <div className="bg-slate-700 rounded-full h-2 mb-2">
-                <div 
-                    className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
-                />
-            </div>
-            <p className="text-slate-400 text-xs">
-                Step {currentStep} of {steps.length} completed
-            </p>
         </div>
-    </div>
-);
+    );
+};
 
 const RestaurantSignupPage = () => {
     const queryClient = useQueryClient();
 
-    const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
-        restaurantName: '',
-        description: '',
-        cuisines: [],
-        phone: '',
-        email: '',
-        address: {
-            street: '',
-            city: '',
-            state: '',
-            pincode: '',
-            geoLocation: { lat: null, lng: null }
-        },
-        licenseNumber: {
-            fssai: '',
-            gst: ''
-        },
-        openingTime: '',
-        closingTime: '',
-        images: []
+    const [currentStep, setCurrentStep] = useState(() => {
+        const savedStep = localStorage.getItem("restaurantCurrentStep");
+        return savedStep ? Number(savedStep) : 1;
+    });
+    const [formErrors, setFormErrors] = useState({});
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem("restaurantForm");
+        return saved
+            ? JSON.parse(saved)
+            : {
+                  restaurantName: "",
+                  description: "",
+                  cuisines: [],
+                  phone: "",
+                  email: "",
+                  address: {
+                    street: "",
+                    city: "",
+                    state: "",
+                    pincode: "",
+                    geoLocation: { lat: null, lng: null },
+                  },
+                  licenseNumber: { fssai: "", gst: "" },
+                  openingTime: "",
+                  closingTime: "",
+                  images: [],
+                  documents: { fssaiLicense: null, gstCertificate: null, panCard: null },
+            };
     });
 
     const [cuisineInput, setCuisineInput] = useState('');
@@ -160,28 +226,55 @@ const RestaurantSignupPage = () => {
         panCard: null
     });
     const fileInputRef = useRef(null);
-    const documentInputRefs = useRef({
-        fssai: null,
-        gst: null,
-        pan: null
-    });
+    const documentInputRefs = useRef({ fssai: null, gst: null, pan: null });
+
+    //UseEffects for saving data in localStorage
+    useEffect(() => {
+        localStorage.setItem("restaurantForm", JSON.stringify(formData));
+    }, [formData]);
+    useEffect(() => {
+        localStorage.setItem("restaurantCurrentStep", currentStep);
+    }, [currentStep]);
 
     // Mutation for registering restaurant
     const registerRestaurantMutation = useMutation({
         mutationFn: registerRestaurant,
-
         onSuccess: () => {
             toast.success("Restaurant registered successfully!");
             queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
         },
-
         onError: (error) => {
             toast.error(error.response?.data?.message || "Something went wrong");
         }
     })
 
+    //For validating the left side navigation bar
+    const validateCurrentStep = () => {
+        switch(currentStep) {
+            case 1: return validateStep1(formData);
+            case 2: return validateStep2(formData);
+            case 3: return validateStep3(formData);
+            case 4: return validateStep4(formData);
+            default: return {};
+        }
+    };
+
+    //Validation error for every step and updation to next step
     const nextStep = () => {
-        if (currentStep < steps.length) setCurrentStep(currentStep + 1);
+        let errors = {};
+        if(currentStep === 1) errors = validateStep1(formData);
+        if(currentStep === 2) errors = validateStep2(formData.address);
+        if(currentStep === 3) errors = validateStep3(formData.images);
+        if(currentStep === 4) errors = validateStep4(documents, formData);
+
+        setFormErrors(errors);
+
+        if (Object.keys(errors).length === 0 && currentStep < 4) {
+            setCurrentStep((prev) => prev + 1);
+        }
+        else{
+            toast.error(Object.values(errors)[0]);
+        }
     };
 
     const removeImage = (index) => {
@@ -197,14 +290,14 @@ const RestaurantSignupPage = () => {
             // Validate file type
             const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
             if (!allowedTypes.includes(file.type)) {
-                alert('Please upload only PDF, JPEG, or PNG files.');
+                toast.error('Please upload only PDF, JPEG, or PNG files.');
                 return;
             }
 
             // Validate file size (5MB limit)
             const maxSize = 5 * 1024 * 1024; // 5MB in bytes
             if (file.size > maxSize) {
-                alert('File size should be less than 5MB.');
+                toast.error('File size should be less than 5MB.');
                 return;
             }
 
@@ -242,10 +335,7 @@ const RestaurantSignupPage = () => {
 
         setFormData(prev => ({
             ...prev,
-            documents: {
-                ...prev.documents,
-                [documentType]: null
-            }
+            documents: { ...prev.documents, [documentType]: null }
         }));
 
         // Clear the file input
@@ -269,21 +359,16 @@ const RestaurantSignupPage = () => {
         setCurrentStep(stepId);
     };
 
+    //Input value change with nested objects also
     const handleInputChange = useCallback((field, value) => {
         if (field.includes('.')) {
             const [parent, child] = field.split('.');
             setFormData(prev => ({
                 ...prev,
-                [parent]: {
-                    ...(prev[parent] || {}),
-                    [child]: value
-                }
+                [parent]: { ...(prev[parent] || {}), [child]: value }
             }));
         } else {
-            setFormData(prev => ({
-                ...prev,
-                [field]: value
-            }));
+            setFormData(prev => ({ ...prev, [field]: value }));
         }
     }, []);
 
@@ -344,7 +429,7 @@ const RestaurantSignupPage = () => {
                 }));
                 
                 setLocationLoading(false);
-                alert(`Location captured successfully!\nLatitude: ${latitude.toFixed(6)}\nLongitude: ${longitude.toFixed(6)}`);
+                toast.success(`Location captured successfully!`);
             },
             (error) => {
                 setLocationLoading(false);
@@ -377,25 +462,33 @@ const RestaurantSignupPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        const errors = validateStep4(documents);
+        setFormErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
         registerRestaurantMutation.mutate({ formData, documents });
+        localStorage.removeItem("restaurantForm");
+        localStorage.removeItem("restaurantCurrentStep");
     }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-8">
             <div className="max-w-full flex gap-5">
                 {/* Main Content */}
-                <div className="flex gap-5 mt-10">
+                <div className="flex gap-5">
                     {/* Left Sidebar - Vertical Steps (Sticky) */}
                     <VerticalStepNavigation 
                         currentStep={currentStep} 
                         steps={steps} 
                         onStepClick={handleStepClick}
+                        validateCurrentStep={validateCurrentStep}
                     />
 
                     {/* Middle Content - Scrollable Form */}
                     <div className="flex-1 bg-white rounded-2xl shadow-xl border border-slate-200  overflow-y-auto">
-                        <div className="p-8 flex flex-col">
-                            <div className="min-h-[63vh] min-w-3xl">
+                        <div className="p-7 flex flex-col">
+                            <div className="min-h-[68vh] min-w-3xl">
                                 {currentStep === 1 && (
                                     <div className="space-y-8">
                                         <div className="border-b border-slate-200 pb-6">
@@ -414,7 +507,7 @@ const RestaurantSignupPage = () => {
                                                     placeholder="Restaurant Name *"
                                                     value={formData.restaurantName}
                                                     onChange={(e) => handleInputChange('restaurantName', e.target.value)}
-                                                    className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                 />
                                             </div>
 
@@ -428,7 +521,7 @@ const RestaurantSignupPage = () => {
                                                     rows="4"
                                                     value={formData.description}
                                                     onChange={(e) => handleInputChange('description', e.target.value)}
-                                                    className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 resize-none group-focus-within:shadow-md"
+                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 resize-none group-focus-within:shadow-md"
                                                 />
                                             </div>
 
@@ -446,7 +539,7 @@ const RestaurantSignupPage = () => {
                                                             value={cuisineInput}
                                                             onChange={(e) => setCuisineInput(e.target.value)}
                                                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCuisine())}
-                                                            className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                            className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                         />
                                                     </div>
                                                     <button
@@ -490,7 +583,7 @@ const RestaurantSignupPage = () => {
                                                         placeholder="Business Email *"
                                                         value={formData.email}
                                                         onChange={(e) => handleInputChange('email', e.target.value)}
-                                                        className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                     />
                                                 </div>
                                                 <div className="relative group">
@@ -502,7 +595,7 @@ const RestaurantSignupPage = () => {
                                                         placeholder="Contact Number *"
                                                         value={formData.phone}
                                                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                        className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                     />
                                                 </div>
                                             </div>
@@ -528,7 +621,7 @@ const RestaurantSignupPage = () => {
                                                     placeholder="Street Address *"
                                                     value={formData.address.street}
                                                     onChange={(e) => handleInputChange('address.street', e.target.value)}
-                                                    className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                 />
                                             </div>
 
@@ -539,21 +632,21 @@ const RestaurantSignupPage = () => {
                                                     placeholder="City *"
                                                     value={formData.address.city}
                                                     onChange={(e) => handleInputChange('address.city', e.target.value)}
-                                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    className="w-full p-4 bg-slate-50 font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="State *"
                                                     value={formData.address.state}
                                                     onChange={(e) => handleInputChange('address.state', e.target.value)}
-                                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    className="w-full p-4 bg-slate-50 font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="PIN Code *"
                                                     value={formData.address.pincode}
                                                     onChange={(e) => handleInputChange('address.pincode', e.target.value)}
-                                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    className="w-full p-4 bg-slate-50 font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
                                                 />
                                             </div>
 
@@ -569,7 +662,7 @@ const RestaurantSignupPage = () => {
                                                     type="button"
                                                     onClick={getMyLocation}
                                                     disabled={locationLoading}
-                                                    className={`px-4 py-2 text-white rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+                                                    className={`px-4 py-2 text-white cursor-pointer rounded-lg transition-colors duration-300 flex items-center gap-2 ${
                                                         locationLoading 
                                                         ? 'bg-gray-400 cursor-not-allowed' 
                                                         : 'bg-blue-600 hover:bg-blue-700'
@@ -586,6 +679,35 @@ const RestaurantSignupPage = () => {
                                                         </>
                                                     )}
                                                 </button>
+                                                {/* Location Display Component */}
+                                                {formData.address.geoLocation && formData.address.geoLocation.lat && formData.address.geoLocation.lng && (
+                                                    <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-2">
+                                                        <div className="flex items-center mb-2 gap-2">
+                                                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                                            <h5 className="font-semibold text-green-800">Location Retrieved Successfully</h5>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                                            <div className="bg-white flex items-center justify-between rounded-lg p-3 border border-green-100">
+                                                                <span className="text-green-600 font-medium block mb-1">Latitude</span>
+                                                                <span className="text-gray-800 font-bold font-mono text-xs">
+                                                                    {formData.address.geoLocation.lat.toFixed(6)}°
+                                                                </span>
+                                                            </div>
+                                                            <div className="bg-white flex items-center justify-between rounded-lg p-3 border border-green-100">
+                                                                <span className="text-green-600 font-medium block mb-1">Longitude</span>
+                                                                <span className="text-gray-800 font-bold font-mono text-xs">
+                                                                    {formData.address.geoLocation.lng.toFixed(6)}°
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3 text-xs text-green-700 flex items-center">
+                                                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                            Coordinates captured for precise location mapping
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -674,14 +796,14 @@ const RestaurantSignupPage = () => {
                                                     placeholder="FSSAI License Number *"
                                                     value={formData.licenseNumber.fssai}
                                                     onChange={(e) => handleInputChange('licenseNumber.fssai', e.target.value)}
-                                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    className="w-full p-4 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="GST Number"
                                                     value={formData.licenseNumber.gst}
                                                     onChange={(e) => handleInputChange('licenseNumber.gst', e.target.value)}
-                                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    className="w-full p-4 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
                                                 />
                                             </div>
 
@@ -801,7 +923,7 @@ const RestaurantSignupPage = () => {
                                                         type="time"
                                                         value={formData.openingTime}
                                                         onChange={(e) => handleInputChange('openingTime', e.target.value)}
-                                                        className="w-full p-3 cursor-pointer bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-300 outline-none text-lg"
+                                                        className="w-full p-3 font-medium cursor-pointer bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-300 outline-none text-lg"
                                                     />
                                                     </div>
                                                 </div>
@@ -814,7 +936,7 @@ const RestaurantSignupPage = () => {
                                                             type="time"
                                                             value={formData.closingTime}
                                                             onChange={(e) => handleInputChange('closingTime', e.target.value)}
-                                                            className="w-full p-3 cursor-pointer bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-300 outline-none text-lg"
+                                                            className="w-full p-3 font-medium cursor-pointer bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-300 outline-none text-lg"
                                                         />
                                                     </div>
                                                 </div>
@@ -844,7 +966,7 @@ const RestaurantSignupPage = () => {
                             </div>
 
                             {/* Navigation Buttons */}
-                            <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-12 pt-8">
+                            <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-10 pt-8">
                                 {currentStep === 1 && (
                                     <Link to={"/restaurant-login"}
                                         className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -885,7 +1007,7 @@ const RestaurantSignupPage = () => {
                 </div>
 
                 {/* Right Part */}
-                <div className="text-center w-full h-full flex flex-col justify-top mb-12 mt-15 animate-fade-in-up">
+                <div className="text-center w-full h-full flex flex-col justify-top mb-12 mt-10 animate-fade-in-up">
                     {/* Website Name */}
                     <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
                         FlavorForge
