@@ -7,6 +7,7 @@ import { registerRestaurant } from "../../api/restaurantApi";
 import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus } from "react-icons/fa";
 import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdDescription } from "react-icons/md";
 import toast from "react-hot-toast";
+import MobileStepIndicator from '../../components/MobileStepIndicator';
 
 const steps = [
     { 
@@ -268,8 +269,9 @@ const RestaurantSignupPage = () => {
         if(currentStep === 4) errors = validateStep4(documents, formData);
 
         setFormErrors(errors);
+        console.log(errors);
 
-        if (Object.keys(errors).length === 0 && currentStep < 4) {
+        if (Object.keys(errors).length === 0 && currentStep < 5) {
             setCurrentStep((prev) => prev + 1);
         }
         else{
@@ -462,10 +464,12 @@ const RestaurantSignupPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        const errors = validateStep4(documents);
+        const errors = validateStep4(documents, formData);
         setFormErrors(errors);
-        if (Object.keys(errors).length > 0) return;
+        if (Object.keys(errors).length > 0){
+            toast.error(Object.values(errors)[0]);
+            return;
+        }
 
         registerRestaurantMutation.mutate({ formData, documents });
         localStorage.removeItem("restaurantForm");
@@ -473,22 +477,29 @@ const RestaurantSignupPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-8">
-            <div className="max-w-full flex gap-5">
+        <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-2 md:p-8">
+            <div className="max-w-full flex flex-col lg:flex-row gap-5">
                 {/* Main Content */}
-                <div className="flex gap-5">
-                    {/* Left Sidebar - Vertical Steps (Sticky) */}
-                    <VerticalStepNavigation 
-                        currentStep={currentStep} 
-                        steps={steps} 
-                        onStepClick={handleStepClick}
-                        validateCurrentStep={validateCurrentStep}
-                    />
+                <div className="flex flex-col lg:flex-row gap-5 flex-1">
+                    {/* Left Sidebar - Vertical Steps (Hidden on mobile) */}
+                    <div className="hidden lg:block">
+                        <VerticalStepNavigation 
+                            currentStep={currentStep} 
+                            steps={steps} 
+                            onStepClick={handleStepClick}
+                            validateCurrentStep={validateCurrentStep}
+                        />
+                    </div>
+
+                    {/* Mobile Step Indicator (Visible only on mobile) */}
+                    <div className="lg:hidden">
+                        <MobileStepIndicator currentStep={currentStep} steps={steps} />
+                    </div>
 
                     {/* Middle Content - Scrollable Form */}
-                    <div className="flex-1 bg-white rounded-2xl shadow-xl border border-slate-200  overflow-y-auto">
-                        <div className="p-7 flex flex-col">
-                            <div className="min-h-[68vh] min-w-3xl">
+                    <div className="flex-1 bg-white rounded-xl lg:rounded-2xl shadow-xl border border-slate-200 overflow-y-auto">
+                        <div className="p-4 lg:p-7 flex flex-col">
+                            <div className="min-h-[68vh]">
                                 {currentStep === 1 && (
                                     <div className="space-y-8">
                                         <div className="border-b border-slate-200 pb-6">
@@ -612,7 +623,7 @@ const RestaurantSignupPage = () => {
 
                                         <div className="space-y-6">
                                             {/* Street Address */}
-                                            <div className="relative group">
+                                            <div className="relative group flex">
                                                 <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
                                                     <MdLocationOn />
                                                 </div>
@@ -770,7 +781,7 @@ const RestaurantSignupPage = () => {
 
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                                                 <h4 className="font-semibold text-green-800 mb-2">📸 Photo Tips</h4>
-                                                <ul className="text-green-700 text-sm grid grid-cols-2">
+                                                <ul className="text-green-700 text-sm grid grid-cols-1">
                                                     <li>• Use natural lighting for food photos</li>
                                                     <li>• Show your restaurant's atmosphere and ambiance</li>
                                                     <li>• Include photos of popular dishes</li>
@@ -824,7 +835,7 @@ const RestaurantSignupPage = () => {
                                                                     )}
                                                                     <p className="text-xs text-slate-500">{doc.desc}</p>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex lg:flex-row flex-col items-center gap-2">
                                                                     {documents[doc.key] ? (
                                                                         <button
                                                                             type="button"
@@ -894,7 +905,7 @@ const RestaurantSignupPage = () => {
                                                 
                                                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                                     <h5 className="font-medium text-blue-800 mb-1">Upload Guidelines:</h5>
-                                                    <ul className="text-blue-700 grid grid-cols-2 text-xs space-y-1">
+                                                    <ul className="text-blue-700 grid lg:grid-cols-2 text-xs space-y-1">
                                                         <li>• Accepted formats: PDF, JPEG, PNG</li>
                                                         <li>• Maximum file size: 5MB</li>
                                                         <li>• Ensure documents are clear and readable</li>
@@ -966,7 +977,7 @@ const RestaurantSignupPage = () => {
                             </div>
 
                             {/* Navigation Buttons */}
-                            <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-10 pt-8">
+                            <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-6 lg:mt-10 pt-4 lg:pt-8 px-2">
                                 {currentStep === 1 && (
                                     <Link to={"/restaurant-login"}
                                         className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -995,10 +1006,10 @@ const RestaurantSignupPage = () => {
                                 ) : (
                                     <button
                                         onClick={handleSubmit}
-                                        className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                        className="flex cursor-pointer items-center space-x-2 lg:px-8 px-2 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                                     >
                                         <FaCheckCircle />
-                                        <span>{registerRestaurantMutation.isPending ? "Registering..." : "Submit Application"}</span>
+                                        <span>{registerRestaurantMutation.isPending ? "Registering. . ." : "Submit Application"}</span>
                                     </button>
                                 )}
                             </div>
@@ -1006,8 +1017,8 @@ const RestaurantSignupPage = () => {
                     </div>
                 </div>
 
-                {/* Right Part */}
-                <div className="text-center w-full h-full flex flex-col justify-top mb-12 mt-10 animate-fade-in-up">
+                {/* Right Part (Hidden on mobile) */}
+                <div className="hidden lg:block lg:w-1/3">
                     {/* Website Name */}
                     <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
                         FlavorForge

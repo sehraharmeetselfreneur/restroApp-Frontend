@@ -13,7 +13,7 @@ const CustomToaster = () => {
       }}
       toastOptions={{
         // Default options for all toasts - Orange & Black Theme
-        duration: 2500,
+        duration: 1500,
         className: '',
         style: {
           background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b12 50%, #0a0a0a 100%)',
@@ -57,7 +57,7 @@ const CustomToaster = () => {
             primary: '#fb923c',
             secondary: '#fef3e2',
           },
-          duration: 4000,
+          duration: 2500,
         },
         
         // Error toast - Orange & Black Theme
@@ -78,7 +78,7 @@ const CustomToaster = () => {
             primary: '#ea580c',
             secondary: '#fef3e2',
           },
-          duration: 6000,
+          duration: 2500,
         },
         
         // Loading toast - Orange & Black Theme
