@@ -979,7 +979,7 @@ const RestaurantSignupPage = () => {
                             {/* Navigation Buttons */}
                             <div className="sticky bottom-0 select-none bg-white border-t border-slate-200 flex justify-between items-center mt-6 lg:mt-10 pt-4 lg:pt-8 px-2">
                                 {currentStep === 1 && (
-                                    <Link to={"/restaurant-login"}
+                                    <Link to={"/restaurant/login"}
                                         className="flex cursor-pointer items-center space-x-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                                     >
                                         <span>Login here</span>
