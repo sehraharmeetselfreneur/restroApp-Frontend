@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import validator from 'validator';
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { registerRestaurant } from "../../api/restaurantApi";
 
-import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus } from "react-icons/fa";
-import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdDescription } from "react-icons/md";
+import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus, FaUser, FaRegCreditCard, FaBuilding, FaMobile, FaEyeSlash, FaEye } from "react-icons/fa";
+import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdDescription, MdOutlineWifiPassword } from "react-icons/md";
+import { CiBank } from "react-icons/ci";
 import toast from "react-hot-toast";
 import MobileStepIndicator from '../../components/MobileStepIndicator';
 
@@ -40,26 +42,61 @@ const steps = [
         icon: <MdAccessTime />, 
         description: "When you're open" 
     },
+    { 
+        id: 6, 
+        label: "Bank Details", 
+        icon: <CiBank />,
+        description: "Account details for payments" 
+    },
 ];
 
 // ---------------- VALIDATION HELPERS ----------------
 const validateStep1 = (data) => {
     const errors = {};
     if (!data.restaurantName?.trim()) errors.restaurantName = "Restaurant name is required";
-    if (!data.email?.trim()) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.email = "Enter a valid email";
-    if (!data.phone?.trim()) errors.phone = "Phone number is required";
-    else if (!/^[6-9]\d{9}$/.test(data.phone)) errors.phone = "Enter a valid 10-digit phone";
+    if (!data.email) {
+        errors.email = "Email is required";
+    }
+    else{
+        if(!validator.isEmail(data.email)){
+            errors.email = "Enter a valid email address";
+        }
+        else{
+            const domain = (data.email.split("@")[1] || "").toLowerCase();
+            const parts = domain.split(".");
+            if(parts.length >= 2 && parts[parts.length - 1] === parts[parts.length - 2]){
+                errors.email = "Enter a valid email address";
+            }
+        }
+    }
+    // Password
+    if (!data.password) {
+        errors.password = "Password is required";
+    } else {
+        if (data.password.length < 8) {
+            errors.password = "Password must be at least 8 characters long";
+        } else if (!/[A-Z]/.test(data.password)) {
+            errors.password = "Password must contain at least one uppercase letter";
+        } else if (!/[a-z]/.test(data.password)) {
+            errors.password = "Password must contain at least one lowercase letter";
+        } else if (!/[0-9]/.test(data.password)) {
+            errors.password = "Password must contain at least one number";
+        } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(data.password)) {
+            errors.password = "Password must contain at least one special character";
+        }
+    }
     if (data.cuisines.length === 0) errors.cuisines = "At least one cuisine is required";
     return errors;
 };
-const validateStep2 = (address) => {
+const validateStep2 = (formData) => {
     const errors = {};
-    if (!address.street?.trim()) errors.street = "Street is required";
-    if (!address.city?.trim()) errors.city = "City is required";
-    if (!address.state?.trim()) errors.state = "State is required";
-    if (!address.pincode?.trim()) errors.pincode = "Pincode is required";
-    else if (!/^\d{6}$/.test(address.pincode)) errors.pincode = "Enter a valid 6-digit pincode";
+    if (!formData.address.street?.trim()) errors.street = "Street is required";
+    if (!formData.phone?.trim()) errors.phone = "Phone number is required";
+    else if (!/^[6-9]\d{9}$/.test(formData.phone)) errors.phone = "Enter a valid 10-digit phone";
+    if (!formData.address.city?.trim()) errors.city = "City is required";
+    if (!formData.address.state?.trim()) errors.state = "State is required";
+    if (!formData.address.pincode?.trim()) errors.pincode = "Pincode is required";
+    else if (!/^\d{6}$/.test(formData.address.pincode)) errors.pincode = "Enter a valid 6-digit pincode";
     return errors;
 };
 const validateStep3 = (images) => {
@@ -87,16 +124,70 @@ const validateStep4 = (documents, formData) => {
     if (!documents.panCard) errors.panCard = "PAN Card upload is required";
     return errors;
 };
+const validateStep5 = (formData) => {
+    const errors = {};
+
+    if (!formData.openingTime) {
+        errors.openingTime = "Opening time is required";
+    }
+    if (!formData.closingTime) {
+        errors.closingTime = "Closing time is required";
+    }
+
+    if (formData.openingTime && formData.closingTime) {
+        const open = new Date(`1970-01-01T${formData.openingTime}:00`);
+        const close = new Date(`1970-01-01T${formData.closingTime}:00`);
+        
+        if (close <= open) {
+            errors.closingTime = "Closing time must be later than opening time";
+        }
+    }
+
+    return errors;
+}
+const validateStep6 = (bankDetails) => {
+    const errors = {};
+
+    if (!bankDetails.accountHolderName.trim()) {
+        errors.accountHolderName = "Account holder name is required";
+    }
+    if (!bankDetails.accountNumber.trim()) {
+        errors.accountNumber = "Account number is required";
+    }
+    else if (!/^\d{9,18}$/.test(bankDetails.accountNumber)) {
+        errors.accountNumber = "Account number must be 9–18 digits";
+    }
+    if (!bankDetails.IFSC.trim()) {
+        errors.IFSC = "IFSC code is required";
+    }
+    else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.IFSC)) {
+        errors.IFSC = "Enter a valid IFSC code";
+    }
+    if (!bankDetails.bankName.trim()) {
+        errors.bankName = "Bank name is required";
+    }
+    if(bankDetails.upi_id){
+        if (!bankDetails.upi_id.trim()) {
+            errors.upi_id = "UPI ID is required";
+        }
+        else if (!/^[\w.-]+@[\w.-]+$/.test(bankDetails.upi_id)) {
+            errors.upi_id = "Enter a valid UPI ID";
+        }
+    }
+
+    return errors;
+};
 
 const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurrentStep  }) => {
     const handleStepClick = (stepId) => {
-        if (validateCurrentStep) {
+        if (stepId > currentStep) {
             const errors = validateCurrentStep();
             if (Object.keys(errors).length > 0) {
                 toast.error(Object.values(errors)[0]);
                 return;
             }
         }
+      
         if (onStepClick) onStepClick(stepId);
     };
 
@@ -107,7 +198,7 @@ const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurre
                 <p className="text-slate-400 text-sm">Complete all steps to join our platform</p>
             </div>
 
-            <div className="space-y-1">
+            <div className="">
                 {steps.map((step, index) => (
                     <div key={step.id}>
                         <div
@@ -159,7 +250,7 @@ const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurre
                                 
                         {/* Connection Line */}
                         {index < steps.length - 1 && (
-                            <div className={`ml-9 h-6 w-0.5 transition-colors duration-500 ${
+                            <div className={`ml-9 h-2 w-0.5 transition-colors duration-500 ${
                                 currentStep > step.id ? "bg-green-500" : "bg-slate-700"
                             }`} />
                         )}
@@ -188,35 +279,45 @@ const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurre
 
 const RestaurantSignupPage = () => {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const [currentStep, setCurrentStep] = useState(() => {
         const savedStep = localStorage.getItem("restaurantCurrentStep");
         return savedStep ? Number(savedStep) : 1;
     });
     const [formErrors, setFormErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
         const saved = localStorage.getItem("restaurantForm");
         return saved
             ? JSON.parse(saved)
-            : {
-                  restaurantName: "",
-                  description: "",
-                  cuisines: [],
-                  phone: "",
-                  email: "",
-                  address: {
-                    street: "",
-                    city: "",
-                    state: "",
-                    pincode: "",
-                    geoLocation: { lat: null, lng: null },
-                  },
-                  licenseNumber: { fssai: "", gst: "" },
-                  openingTime: "",
-                  closingTime: "",
-                  images: [],
-                  documents: { fssaiLicense: null, gstCertificate: null, panCard: null },
-            };
+            :   {
+                    restaurantName: "",
+                    description: "",
+                    cuisines: [],
+                    phone: "",
+                    email: "",
+                    password: "",
+                    address: {
+                        street: "",
+                        city: "",
+                        state: "",
+                        pincode: "",
+                        geoLocation: { lat: null, lng: null },
+                    },
+                    licenseNumber: { fssai: "", gst: "" },
+                    openingTime: "",
+                    closingTime: "",
+                    images: [],
+                    documents: { fssaiLicense: null, gstCertificate: null, panCard: null },
+                    bankDetails: {
+                        accountHolderName: "",
+                        accountNumber: "",
+                        IFSC: "",
+                        bankName: "",
+                        upi_id: ""
+                    }
+                };
     });
 
     const [cuisineInput, setCuisineInput] = useState('');
@@ -240,9 +341,15 @@ const RestaurantSignupPage = () => {
     // Mutation for registering restaurant
     const registerRestaurantMutation = useMutation({
         mutationFn: registerRestaurant,
-        onSuccess: () => {
+        onSuccess: (data) => {
             toast.success("Restaurant registered successfully!");
+            localStorage.removeItem("restaurantForm");
+            localStorage.removeItem("restaurantCurrentStep");
             queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+            // Navigate to dashboard
+            setTimeout(() => {
+                navigate("/restaurant/dashboard");
+            }, 100);
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || "Something went wrong");
@@ -253,25 +360,28 @@ const RestaurantSignupPage = () => {
     const validateCurrentStep = () => {
         switch(currentStep) {
             case 1: return validateStep1(formData);
-            case 2: return validateStep2(formData);
-            case 3: return validateStep3(formData);
-            case 4: return validateStep4(formData);
+            case 2: return validateStep2(formData.address);
+            case 3: return validateStep3(formData.images);
+            case 4: return validateStep4(documents, formData);
+            case 5: return validateStep5(formData);
+            case 6: return validateStep6(formData.bankDetails);
             default: return {};
         }
     };
-
+    
     //Validation error for every step and updation to next step
     const nextStep = () => {
         let errors = {};
         if(currentStep === 1) errors = validateStep1(formData);
-        if(currentStep === 2) errors = validateStep2(formData.address);
+        if(currentStep === 2) errors = validateStep2(formData);
         if(currentStep === 3) errors = validateStep3(formData.images);
         if(currentStep === 4) errors = validateStep4(documents, formData);
+        if(currentStep === 5) errors = validateStep5(formData);
+        if(currentStep === 6) errors = validateStep6(formData.bankDetails);
 
         setFormErrors(errors);
-        console.log(errors);
 
-        if (Object.keys(errors).length === 0 && currentStep < 5) {
+        if (Object.keys(errors).length === 0 && currentStep < 6) {
             setCurrentStep((prev) => prev + 1);
         }
         else{
@@ -303,29 +413,16 @@ const RestaurantSignupPage = () => {
                 return;
             }
 
-            // Convert to base64 for storage
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setDocuments(prev => ({
-                    ...prev,
-                    [documentType]: {
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                        data: e.target.result
-                    }
-                }));
+            setDocuments(prev => ({ ...prev, [documentType]: file }));
 
-                // Also update the main formData if needed
-                setFormData(prev => ({
-                    ...prev,
-                    documents: {
-                        ...prev.documents,
-                        [documentType]: e.target.result
-                    }
-                }));
-            };
-            reader.readAsDataURL(file);
+            // Also update the main formData if needed
+            setFormData(prev => ({
+                ...prev,
+                documents: {
+                    ...prev.documents,
+                    [documentType]: file
+                }
+            }));
         }
     };
 
@@ -393,16 +490,10 @@ const RestaurantSignupPage = () => {
 
     const handleImageUpload = (event) => {
         const files = Array.from(event.target.files);
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setFormData(prev => ({
-                    ...prev,
-                    images: [...prev.images, e.target.result]
-                }));
-            };
-            reader.readAsDataURL(file);
-        });
+        setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, ...files]  // store as File[]
+        }));
     };
 
     const getMyLocation = () => {
@@ -464,16 +555,16 @@ const RestaurantSignupPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const errors = validateStep4(documents, formData);
+        const errors = validateStep6(formData.bankDetails);
         setFormErrors(errors);
         if (Object.keys(errors).length > 0){
             toast.error(Object.values(errors)[0]);
             return;
         }
+        console.log(formData);
 
+        //Mutation calling the API
         registerRestaurantMutation.mutate({ formData, documents });
-        localStorage.removeItem("restaurantForm");
-        localStorage.removeItem("restaurantCurrentStep");
     }
 
     return (
@@ -497,7 +588,7 @@ const RestaurantSignupPage = () => {
                     </div>
 
                     {/* Middle Content - Scrollable Form */}
-                    <div className="flex-1 bg-white rounded-xl lg:rounded-2xl shadow-xl border border-slate-200 overflow-y-auto">
+                    <div className="flex-1 bg-white rounded-xl lg:rounded-2xl lg:min-w-3xl shadow-xl border border-slate-200 overflow-y-auto h-fit">
                         <div className="p-4 lg:p-7 flex flex-col">
                             <div className="min-h-[68vh]">
                                 {currentStep === 1 && (
@@ -556,7 +647,7 @@ const RestaurantSignupPage = () => {
                                                     <button
                                                         type="button"
                                                         onClick={addCuisine}
-                                                        className="px-6 py-3 cursor-pointer bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all duration-300 flex items-center gap-2"
+                                                        className="px-6 py-3 cursor-pointer font-bold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all duration-300 flex items-center gap-2"
                                                     >
                                                         <FaPlus className="text-sm" />
                                                         Add
@@ -599,15 +690,22 @@ const RestaurantSignupPage = () => {
                                                 </div>
                                                 <div className="relative group">
                                                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
-                                                        <MdPhone />
+                                                      <MdOutlineWifiPassword />
                                                     </div>
                                                     <input
-                                                        type="tel"
-                                                        placeholder="Contact Number *"
-                                                        value={formData.phone}
-                                                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                        type={showPassword ? "text" : "password"}
+                                                        placeholder="Password *"
+                                                        value={formData.password}
+                                                        onChange={(e) => handleInputChange('password', e.target.value)}
+                                                        className="w-full p-4 pl-12 pr-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute cursor-pointer right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors duration-300"
+                                                    >
+                                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -623,17 +721,34 @@ const RestaurantSignupPage = () => {
 
                                         <div className="space-y-6">
                                             {/* Street Address */}
-                                            <div className="relative group flex">
-                                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
-                                                    <MdLocationOn />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {/* Street Address */}
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <MdLocationOn />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Street Address *"
+                                                        value={formData.address.street}
+                                                        onChange={(e) => handleInputChange('address.street', e.target.value)}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                    />
                                                 </div>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Street Address *"
-                                                    value={formData.address.street}
-                                                    onChange={(e) => handleInputChange('address.street', e.target.value)}
-                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
-                                                />
+
+                                                {/* Contact Number */}
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <MdPhone />
+                                                    </div>
+                                                    <input
+                                                        type="tel"
+                                                        placeholder="Contact Number *"
+                                                        value={formData.phone}
+                                                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                    />
+                                                </div>
                                             </div>
 
                                             {/* City, State, PIN */}
@@ -673,7 +788,7 @@ const RestaurantSignupPage = () => {
                                                     type="button"
                                                     onClick={getMyLocation}
                                                     disabled={locationLoading}
-                                                    className={`px-4 py-2 text-white cursor-pointer rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+                                                    className={`px-4 py-2 text-white cursor-pointer font-bold rounded-lg transition-colors duration-300 flex items-center gap-2 ${
                                                         locationLoading 
                                                         ? 'bg-gray-400 cursor-not-allowed' 
                                                         : 'bg-blue-600 hover:bg-blue-700'
@@ -759,22 +874,30 @@ const RestaurantSignupPage = () => {
                                                 <div>
                                                     <h4 className="font-semibold text-slate-700 mb-4">Uploaded Images ({formData.images.length})</h4>
                                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                        {formData.images.map((image, index) => (
-                                                            <div key={index} className="relative group">
-                                                                <img
-                                                                    src={image}
-                                                                    alt={`Restaurant ${index + 1}`}
-                                                                    className="w-full h-32 object-cover rounded-xl shadow-md"
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeImage(index)}
-                                                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
-                                                                >
-                                                                    <FaTimes className="text-xs" />
-                                                                </button>
-                                                            </div>
-                                                        ))}
+                                                        {formData.images.map((image, index) => {
+                                                            let imageUrl = "";
+                                                            if (image instanceof File) {
+                                                                imageUrl = URL.createObjectURL(image);
+                                                            } else {
+                                                                imageUrl = image; // maybe a URL or base64
+                                                            }
+                                                            return (
+                                                                <div key={index} className="relative group">
+                                                                    <img
+                                                                        src={imageUrl}
+                                                                        alt={`Restaurant ${index + 1}`}
+                                                                        className="w-full h-32 object-cover rounded-xl shadow-md"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeImage(index)}
+                                                                        className="absolute cursor-pointer top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
+                                                                    >
+                                                                        <FaTimes className="text-xs" />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
@@ -827,7 +950,7 @@ const RestaurantSignupPage = () => {
                                                         { name: "PAN Card", key: "panCard", inputRef: "pan", required: false, desc: "Business PAN verification" }
                                                     ].map((doc, index) => (
                                                         <div key={index} className="p-4 bg-white rounded-lg border border-gray-200">
-                                                            <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center justify-between ">
                                                                 <div>
                                                                     <span className="font-medium text-slate-700">{doc.name}</span>
                                                                     {doc.required && (
@@ -869,18 +992,16 @@ const RestaurantSignupPage = () => {
                                                             {/* File Preview */}
                                                             {documents[doc.key] && (
                                                                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                                    <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center justify-between gap-3">
                                                                         <div className="flex-shrink-0">
                                                                             {documents[doc.key].type === 'application/pdf' ? (
                                                                                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                                                                                     <span className="text-red-600 font-bold text-xs">PDF</span>
                                                                                 </div>
                                                                             ) : (
-                                                                                <img
-                                                                                    src={documents[doc.key].data}
-                                                                                    alt="Document preview"
-                                                                                    className="w-10 h-10 object-cover rounded-lg"
-                                                                                />
+                                                                                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                                                                    <span className="text-orange-400 font-bold text-xs">IMG</span>
+                                                                                </div>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
@@ -974,6 +1095,96 @@ const RestaurantSignupPage = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {currentStep === 6 && (
+                                    <div className="space-y-8">
+                                        <div className="border-b border-slate-200 pb-6">
+                                            <h2 className="text-3xl font-bold text-slate-800 mb-2">Bank Details</h2>
+                                            <p className="text-slate-600">Add your bank account information for payments</p>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <CiBank className="text-xl" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Bank Name *"
+                                                        value={formData.bankDetails.bankName}
+                                                        onChange={(e) => handleInputChange('bankDetails.bankName', e.target.value)}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    />
+                                                </div>
+
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <FaUser className="text-sm" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Account Holder Name *"
+                                                        value={formData.bankDetails.accountHolderName}
+                                                        onChange={(e) => handleInputChange('bankDetails.accountHolderName', e.target.value)}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <FaRegCreditCard className="text-sm" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Account Number *"
+                                                        value={formData.bankDetails.accountNumber}
+                                                        onChange={(e) => handleInputChange('bankDetails.accountNumber', e.target.value)}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    />
+                                                </div>
+
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                        <FaBuilding className="text-sm" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="IFSC Code *"
+                                                        value={formData.bankDetails.IFSC}
+                                                        onChange={(e) => handleInputChange('bankDetails.IFSC', e.target.value.toUpperCase())}
+                                                        className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                    <FaMobile className="text-sm" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="UPI ID (Optional)"
+                                                    value={formData.bankDetails.upi_id}
+                                                    onChange={(e) => handleInputChange('bankDetails.upi_id', e.target.value)}
+                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300"
+                                                />
+                                            </div>
+
+                                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                                                <h4 className="font-semibold text-blue-800 mb-2">💳 Bank Account Guidelines</h4>
+                                                <ul className="text-blue-700 text-sm space-y-2">
+                                                    <li>• Enter details exactly as they appear in your bank account</li>
+                                                    <li>• Double-check IFSC code and account number</li>
+                                                    <li>• UPI ID is optional but recommended for faster payments</li>
+                                                    <li>• All payment information is encrypted and secure</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Navigation Buttons */}
@@ -1018,25 +1229,27 @@ const RestaurantSignupPage = () => {
                 </div>
 
                 {/* Right Part (Hidden on mobile) */}
-                <div className="hidden lg:block lg:w-1/3">
-                    {/* Website Name */}
-                    <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
-                        FlavorForge
-                    </h1>
+                <div className="hidden lg:block lg:w-fit">
+                    <div className="sticky top-20">
+                        {/* Website Name */}
+                        <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
+                            FlavorForge
+                        </h1>
 
-                    {/* Tagline */}
-                    <p className="text-lg text-slate-600 font-medium">
-                        Where your passion for food meets our network.
-                    </p>
+                        {/* Tagline */}
+                        <p className="text-lg text-slate-600 font-medium">
+                            Where your passion for food meets our network.
+                        </p>
 
-                    {/* Subtly animated decorative line */}
-                    <div className="w-16 h-1 bg-orange-300 mx-auto mt-4 rounded-full animate-pulse-slow"></div>
+                        {/* Subtly animated decorative line */}
+                        <div className="w-16 h-1 bg-orange-300 mx-auto mt-4 rounded-full animate-pulse-slow"></div>
 
-                    <div className="mt-10 w-full">
-                        <img
-                            className="w-full h-[60vh] object-cover rounded-2xl"
-                            src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Q2hlZnxlbnwwfHwwfHx8MA%3D%3D" alt=""
-                        />
+                        <div className="mt-10 w-full">
+                            <img
+                                className="w-full h-[60vh] object-cover rounded-2xl shadow-2xl shadow-black"
+                                src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Q2hlZnxlbnwwfHwwfHx8MA%3D%3D" alt=""
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

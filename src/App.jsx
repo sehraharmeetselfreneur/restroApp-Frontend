@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 //Zustand store
@@ -41,10 +41,8 @@ const App = () => {
         retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        staleTime: Infinity,
-        cacheTime: Infinity,
-        onSuccess: (data) => setUser(data, "customer"),
-        onError: () => restaurantQuery.refetch()
+        staleTime: 0,
+        cacheTime: 0
     });
 
     const restaurantQuery = useQuery({
@@ -54,28 +52,44 @@ const App = () => {
         retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        staleTime: Infinity,
-        cacheTime: Infinity,
-        onSuccess: (data) => setUser(data, "restaurant"),
-        onError: () => clearUser()
+        staleTime: 0,
+        cacheTime: 0
     });
+
+    useEffect(() => {
+        if (customerQuery.isSuccess && customerQuery.data) {
+            setUser(customerQuery.data.profile, "Customer");
+        } else if (customerQuery.isError && !restaurantQuery.isFetching && !restaurantQuery.isSuccess) {
+            console.log("Customer query error, trying restaurant");
+            restaurantQuery.refetch();
+        }
+    }, [customerQuery.isSuccess, customerQuery.isError, customerQuery.data]);
+    useEffect(() => {
+        if (restaurantQuery.isSuccess && restaurantQuery.data) {
+            setUser(restaurantQuery.data.profile, "Restaurant");
+        } else if (restaurantQuery.isError) {
+            clearUser();
+        }
+    }, [restaurantQuery.isSuccess, restaurantQuery.isError, restaurantQuery.data]);
 
     if(!authInitialized || customerQuery.isLoading || restaurantQuery.isFetching){
         return <PageLoader />;
     }
 
+    console.log(user);
+
     return (
         <div>
             <Routes>
-                <Route path="/restaurant/signup" element={user ? <HomePage /> : <RestaurantSignupPage />} />
-                <Route path="/restaurant/login" element={user ? <HomePage /> : <RestaurantLoginPage />} />
+                <Route path="/restaurant/signup" element={!user ? <RestaurantSignupPage /> : <Navigate to={"/restaurant/dashboard"} />} />
+                <Route path="/restaurant/login" element={!user ? <RestaurantLoginPage /> : <Navigate to={"/restaurant/dashboard"} />} />
 
                 {/* <Route path="/signup" element={user ? <HomePage /> : <CustomerSignupPage />} />
                 <Route path="/login" element={user ? <HomePage /> : <CustomerLoginPage />} /> */}
 
                 <Route path="/" element={<HomePage />} />
 
-                <Route path="/restaurant/dashboard" element={<RestaurantDashboardPage />} />
+                <Route path="/restaurant/dashboard" element={user ? <RestaurantDashboardPage /> : <RestaurantLoginPage />} />
             </Routes>
         </div>
     )

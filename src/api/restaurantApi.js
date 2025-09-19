@@ -9,30 +9,25 @@ export const registerRestaurant = async ({ formData, documents }) => {
         data.append("description", formData.description);
         data.append("phone", formData.phone);
         data.append("email", formData.email);
+        data.append("password", formData.password);
         data.append("openingTime", formData.openingTime);
         data.append("closingTime", formData.closingTime);
 
-        // Nested fields (address)
-        data.append("address[street]", formData.address.street);
-        data.append("address[city]", formData.address.city);
-        data.append("address[state]", formData.address.state);
-        data.append("address[pincode]", formData.address.pincode);
-        data.append("address[geoLocation][lat]", formData.address.geoLocation.lat ?? "");
-        data.append("address[geoLocation][lng]", formData.address.geoLocation.lng ?? "");
-
-        // License numbers
-        data.append("licenseNumber[fssai]", formData.licenseNumber.fssai);
-        data.append("licenseNumber[gst]", formData.licenseNumber.gst);
+        data.append("address", JSON.stringify(formData.address));
+        data.append("licenseNumber", JSON.stringify(formData.licenseNumber));
 
         // Cuisines array
-        formData.cuisines.forEach((cuisine, index) => {
-          data.append(`cuisines[${index}]`, cuisine);
-        });
+        // formData.cuisines.forEach((cuisine, index) => {
+        //   data.append(`cuisines[${index}]`, cuisine);
+        // });
+        data.append("cuisines", JSON.stringify(formData.cuisines));
     
         // Images array (multiple files)
         formData.images.forEach((file) => {
           data.append("images", file);
         });
+
+        data.append("bankDetails", JSON.stringify(formData.bankDetails));
 
         // Documents
         if (documents.fssaiLicense) data.append("fssaiLicense", documents.fssaiLicense);
@@ -87,7 +82,18 @@ export const getRestaurantProfile = async () => {
         return res.data;
     }
     catch(err){
-        console.log("Error in getRestaurantProfile: ", err.message);
+        console.log("Error in getRestaurantProfile: ", err);
+        throw err;
+    }
+}
+
+export const restaurantLogout = async () => {
+    try{
+        const res = axiosInstance.post('/restaurant/logout');
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in restaurantLogout: ", err);
         throw err;
     }
 }
