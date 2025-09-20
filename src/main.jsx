@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css'
 import App from './App.jsx'
 
-import CustomToaster from './components/CustomToaster.jsx';
+import CustomToaster from './components/toast/CustomToaster.jsx';
 
 const queryClient = new QueryClient({
     defaultOptions: {

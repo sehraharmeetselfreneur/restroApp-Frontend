@@ -1,4 +1,4 @@
-import { Utensils } from "lucide-react"; // You can swap icons if needed
+import { Utensils } from "lucide-react";
 
 const PageLoader = () => {
     return (

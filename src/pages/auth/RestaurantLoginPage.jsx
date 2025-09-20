@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import validator from 'validator';
 import toast from "react-hot-toast";
-import { FaEnvelope, FaLock, FaKey, FaArrowRight, FaEyeSlash, FaEye } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { generateOtp, getRestaurantProfile, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
+
+//Icons
+import { FaEnvelope, FaKey, FaArrowRight, FaEyeSlash, FaEye } from "react-icons/fa";
 import { MdOutlineWifiPassword } from "react-icons/md";
-import useAuthStore from "../../store/useAuthStore";
+
+//API Functions
+import { generateOtp, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
 
 const RestaurantLoginPage = () => {
     const queryClient = useQueryClient();
