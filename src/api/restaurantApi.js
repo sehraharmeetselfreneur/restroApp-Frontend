@@ -71,7 +71,7 @@ export const loginRestaurant = async (formData) => {
         return res.data;
     }
     catch(err){
-        console.log("Error in loginRestaurant: ", err.message);
+        console.log("Error in loginRestaurant: ", err);
         throw err;
     }
 }

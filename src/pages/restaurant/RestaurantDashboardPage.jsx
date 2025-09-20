@@ -6,11 +6,15 @@ import {
 } from "lucide-react";
 import { TbLogout } from "react-icons/tb";
 import useAuthStore from '../../store/useAuthStore';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { restaurantLogout } from '../../api/restaurantApi';
+import { useNavigate } from 'react-router-dom';
 
 const RestaurantDashboardPage = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -19,6 +23,10 @@ const RestaurantDashboardPage = () => {
     mutationFn: restaurantLogout,
     onSuccess: () => {
         toast.success("Logged out successfully!");
+        queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        setTimeout(() => {
+                navigate("/restaurant/login");
+            }, 100);
         clearUser();
     },
     onError: () => {
@@ -130,7 +138,7 @@ const RestaurantDashboardPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-orange-600 uppercase tracking-wide">Rating</p>
-                <p className="text-3xl font-bold text-orange-700 mt-1">{user?.rating || 0}</p>
+                <p className="text-3xl font-bold text-orange-700 mt-1">{user?.profile.rating || 0}</p>
               </div>
               <div className="p-3 bg-orange-500/20 rounded-xl">
                 <Star size={24} className="text-orange-600" />
@@ -167,7 +175,7 @@ const RestaurantDashboardPage = () => {
               <div>
                 <p className="text-sm font-medium text-purple-600 uppercase tracking-wide">Status</p>
                 <p className="text-lg font-bold text-purple-700 mt-1">
-                  {user?.isOpen ? 'Open' : 'Closed'}
+                  {user?.profile.isOpen ? 'Open' : 'Closed'}
                 </p>
               </div>
               <div className="p-3 bg-purple-500/20 rounded-xl">
@@ -208,13 +216,13 @@ const RestaurantDashboardPage = () => {
         <div className="space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Restaurant Name</label>
-            <p className="text-xl font-bold text-gray-800 mt-1">{user?.restaurantName}</p>
+            <p className="text-xl font-bold text-gray-800 mt-1">{user?.profile.restaurantName}</p>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Cuisines</label>
             <div className="flex flex-wrap gap-2 mt-2">
-              {user?.cuisines?.map((cuisine, index) => (
+              {user?.profile.cuisines?.map((cuisine, index) => (
                 <span key={index} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
                   {cuisine}
                 </span>
@@ -227,11 +235,11 @@ const RestaurantDashboardPage = () => {
             <div className="space-y-2 mt-2">
               <div className="flex items-center gap-2">
                 <Phone size={16} className="text-gray-500" />
-                <p className="text-gray-800">{user?.phone}</p>
+                <p className="text-gray-800">{user?.profile.phone}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={16} className="text-gray-500" />
-                <p className="text-gray-800">{user?.email}</p>
+                <p className="text-gray-800">{user?.profile.email}</p>
               </div>
             </div>
           </div>
@@ -243,11 +251,11 @@ const RestaurantDashboardPage = () => {
             <div className="mt-2 p-4 bg-gray-50 rounded-xl">
               <div className="flex items-center justify-between">
                 <span className="text-gray-700">Opens at:</span>
-                <span className="font-bold text-gray-800">{formatTime(user?.openingTime)}</span>
+                <span className="font-bold text-gray-800">{formatTime(user?.profile.openingTime)}</span>
               </div>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-gray-700">Closes at:</span>
-                <span className="font-bold text-gray-800">{formatTime(user?.closingTime)}</span>
+                <span className="font-bold text-gray-800">{formatTime(user?.profile.closingTime)}</span>
               </div>
             </div>
           </div>
@@ -255,9 +263,9 @@ const RestaurantDashboardPage = () => {
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Address</label>
             <div className="mt-2 p-4 bg-gray-50 rounded-xl space-y-1">
-              <p className="text-gray-800">{user?.address?.street}</p>
-              <p className="text-gray-800">{user?.address?.city}, {user?.address?.state}</p>
-              <p className="text-gray-800">PIN: {user?.address?.pincode}</p>
+              <p className="text-gray-800">{user?.profile.address?.street}</p>
+              <p className="text-gray-800">{user?.profile.address?.city}, {user?.profile.address?.state}</p>
+              <p className="text-gray-800">PIN: {user?.profile.address?.pincode}</p>
             </div>
           </div>
 
@@ -265,11 +273,11 @@ const RestaurantDashboardPage = () => {
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Current Status</label>
             <div className="mt-2">
               <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                user?.isOpen 
+                user?.profile.isOpen 
                   ? 'bg-green-100 text-green-700' 
                   : 'bg-red-100 text-red-700'
               }`}>
-                {user?.isOpen ? 'Open for Orders' : 'Currently Closed'}
+                {user?.profile.isOpen ? 'Open for Orders' : 'Currently Closed'}
               </span>
             </div>
           </div>
@@ -297,24 +305,24 @@ const RestaurantDashboardPage = () => {
         <div className="space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Account Holder</label>
-            <p className="text-xl font-bold text-gray-800 mt-1">Restaurant Account</p>
+            <p className="text-xl font-bold text-gray-800 mt-1">{user?.bankDetails.accountHolderName}</p>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Account Number</label>
-            <p className="text-xl font-mono text-gray-800 mt-1">••••••••1234</p>
+            <p className="text-xl font-mono text-gray-800 mt-1">{user?.bankDetails.accountNumber}</p>
           </div>
         </div>
 
         <div className="space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Bank Name</label>
-            <p className="text-xl font-bold text-gray-800 mt-1">••••• Bank</p>
+            <p className="text-xl font-bold text-gray-800 mt-1">{user?.bankDetails.bankName}</p>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">IFSC Code</label>
-            <p className="text-xl font-mono text-gray-800 mt-1">••••0001234</p>
+            <p className="text-xl font-mono text-gray-800 mt-1">{user?.bankDetails.IFSC}</p>
           </div>
         </div>
       </div>
@@ -338,7 +346,7 @@ const RestaurantDashboardPage = () => {
             </div>
             <h3 className="font-bold text-gray-800 mb-2">FSSAI License</h3>
             <p className="text-sm text-gray-600 mb-4">Food Safety License</p>
-            {user?.documents?.fssaiLicense ? (
+            {user?.profile.documents?.fssaiLicense ? (
               <div className="flex items-center justify-center gap-2 text-green-600">
                 <CheckCircle size={16} />
                 <span className="text-sm font-medium">Uploaded</span>
@@ -356,7 +364,7 @@ const RestaurantDashboardPage = () => {
             </div>
             <h3 className="font-bold text-gray-800 mb-2">GST Certificate</h3>
             <p className="text-sm text-gray-600 mb-4">Tax Registration</p>
-            {user?.documents?.gstCertificate ? (
+            {user?.profile.documents?.gstCertificate ? (
               <div className="flex items-center justify-center gap-2 text-green-600">
                 <CheckCircle size={16} />
                 <span className="text-sm font-medium">Uploaded</span>
@@ -374,7 +382,7 @@ const RestaurantDashboardPage = () => {
             </div>
             <h3 className="font-bold text-gray-800 mb-2">PAN Card</h3>
             <p className="text-sm text-gray-600 mb-4">Business PAN</p>
-            {user?.documents?.panCard ? (
+            {user?.profile.documents?.panCard ? (
               <div className="flex items-center justify-center gap-2 text-green-600">
                 <CheckCircle size={16} />
                 <span className="text-sm font-medium">Uploaded</span>
@@ -389,8 +397,8 @@ const RestaurantDashboardPage = () => {
       <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
         <h4 className="font-bold text-blue-800 mb-2">License Information</h4>
         <div className="space-y-2 text-sm">
-          <p><span className="font-medium">FSSAI Number:</span> ••••••••••1234</p>
-          <p><span className="font-medium">GST Number:</span> ••••••••••••1Z5</p>
+          <p><span className="font-medium">FSSAI Number:</span> {user?.profile.licenseNumber.fssai}</p>
+          <p><span className="font-medium">GST Number:</span> {user?.profile.licenseNumber.gst}</p>
         </div>
       </div>
     </div>
@@ -409,19 +417,19 @@ const RestaurantDashboardPage = () => {
         <div className="p-6 border border-gray-200 rounded-xl">
           <h3 className="text-lg font-bold text-gray-800 mb-2">Restaurant Status</h3>
           <p className="text-gray-600 mb-4">Toggle your restaurant's availability for orders</p>
-          <button className={`px-6 py-3 rounded-xl font-medium transition-colors ${
-            user?.isOpen 
+          <button className={`px-6 py-3 cursor-pointer rounded-xl font-medium transition-colors ${
+            user?.profile.isOpen 
               ? 'bg-red-500 hover:bg-red-600 text-white' 
               : 'bg-green-500 hover:bg-green-600 text-white'
           }`}>
-            {user?.isOpen ? 'Close Restaurant' : 'Open Restaurant'}
+            {user?.profile.isOpen ? 'Close Restaurant' : 'Open Restaurant'}
           </button>
         </div>
 
         <div className="p-6 border border-gray-200 rounded-xl">
           <h3 className="text-lg font-bold text-gray-800 mb-2">Profile Settings</h3>
           <p className="text-gray-600 mb-4">Update your restaurant information and settings</p>
-          <button className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition-colors">
+          <button className="px-6 py-3 cursor-pointer bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition-colors">
             Update Profile
           </button>
         </div>
@@ -429,9 +437,9 @@ const RestaurantDashboardPage = () => {
         <div className="p-6 border border-gray-200 rounded-xl">
           <h3 className="text-lg font-bold text-gray-800 mb-2">Account Information</h3>
           <div className="space-y-2 text-sm text-gray-600">
-            <p><span className="font-medium">Account Created:</span> {new Date(user?.createdAt).toLocaleDateString()}</p>
-            <p><span className="font-medium">Last Updated:</span> {new Date(user?.updatedAt).toLocaleDateString()}</p>
-            <p><span className="font-medium">Restaurant ID:</span> {user?._id}</p>
+            <p><span className="font-medium">Account Created:</span> {new Date(user?.profile.createdAt).toLocaleDateString()}</p>
+            <p><span className="font-medium">Last Updated:</span> {new Date(user?.profile.updatedAt).toLocaleDateString()}</p>
+            <p><span className="font-medium">Restaurant ID:</span> {user?.profile._id}</p>
           </div>
         </div>
       </div>
@@ -514,8 +522,8 @@ const RestaurantDashboardPage = () => {
             isHovered || sidebarOpen ? 'opacity-100' : 'opacity-0'
           }`}>
             <div className="px-2">
-              <p className="text-lg font-bold text-gray-800 truncate">{user?.restaurantName}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-lg font-bold text-gray-800 truncate">{user?.profile.restaurantName}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.profile.email}</p>
             </div>
             <button onClick={handleLogout}>
                 <TbLogout className='cursor-pointer hover:bg-orange-500 p-1 rounded-lg hover:text-white hover:transition-all' size={35} />
@@ -538,7 +546,7 @@ const RestaurantDashboardPage = () => {
           {/* Header */}
           <div className="mb-8 lg:ml-0 ml-16">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Welcome back, {user?.restaurantName}!
+              Welcome back, {user?.profile.restaurantName}!
             </h1>
             <p className="text-gray-600">
               Here's what's happening with your restaurant today.

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import validator from 'validator';
 import toast from "react-hot-toast";
-import { FaEnvelope, FaLock, FaKey, FaArrowRight } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaEnvelope, FaLock, FaKey, FaArrowRight, FaEyeSlash, FaEye } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { generateOtp, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
+import { generateOtp, getRestaurantProfile, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
+import { MdOutlineWifiPassword } from "react-icons/md";
+import useAuthStore from "../../store/useAuthStore";
 
 const RestaurantLoginPage = () => {
     const queryClient = useQueryClient();
@@ -12,9 +14,14 @@ const RestaurantLoginPage = () => {
     //Required mutations for login
     const loginRestaurantMutation = useMutation({
         mutationFn: loginRestaurant,
-        onSuccess: (data) => {
-            toast.success("Login successful");
-            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        onSuccess: () => {
+        localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
+        queryClient.refetchQueries({ queryKey: ["restaurantProfile"] });
+        window.location.replace('/restaurant/dashboard');
+        toast.success("Login successful");
+    },
+        onError: (err) => {
+            toast.error(err.response.data.message);
         }
     })
     const generateOtpMutation = useMutation({
@@ -39,6 +46,7 @@ const RestaurantLoginPage = () => {
 
     const heroImageUrl = "https://images.unsplash.com/photo-1551270273-df33a598c430";
     const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -109,8 +117,8 @@ const RestaurantLoginPage = () => {
             return;
         }
 
-        verifyOtpMutation.mutate({ email: formData.email, otp: formData.otp }); //Verifying OTP, if verified, loginMutation will be called after the success
-        localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
+        // verifyOtpMutation.mutate({ email: formData.email, otp: formData.otp }); //Verifying OTP, if verified, loginMutation will be called after the success
+        loginRestaurantMutation.mutate(formData);
     };
 
     const handleGenerateOtp = () => {
@@ -132,7 +140,7 @@ const RestaurantLoginPage = () => {
             </div>
 
             {/* Form (Main content for mobile, Left part for desktop) */}
-            <div className="bg-white w-full max-w-2xl lg:max-w-2xl rounded-none lg:rounded-2xl shadow-none lg:shadow-2xl m-0 lg:m-8 p-4 sm:p-6 md:p-8 lg:p-12 relative z-10 border-0 lg:border border-slate-100 min-h-screen lg:min-h-0">
+            <div className="bg-white w-full max-w-2xl lg:max-w-2xl rounded-none lg:rounded-2xl shadow-none lg:shadow-2xl m-0 lg:m-8 p-4 sm:p-6 md:p-8 lg:p-12 relative z-10 border-0 lg:border border-slate-100 min-h-[80vh] lg:min-h-0">
                 {/* Logo and Title - Hidden on mobile (shown in header instead) */}
                 <div className="text-center mb-6 lg:mb-10 select-none hidden lg:block">
                     <div className="flex justify-center mb-4">
@@ -173,15 +181,23 @@ const RestaurantLoginPage = () => {
 
                     {/* Password */}
                     <div className="relative group">
-                        <FaLock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300 text-sm sm:text-base" />
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                          <MdOutlineWifiPassword />
+                        </div>
                         <input
-                            type="password"
-                            placeholder="Password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password *"
                             value={formData.password}
-                            onChange={(e) => handleChange("password", e.target.value)}
-                            className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder-slate-400 font-medium text-sm sm:text-base"
-                            required
+                            onChange={(e) => handleChange('password', e.target.value)}
+                            className="w-full p-4 pl-12 pr-12 font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none transition-all duration-300 outline-none hover:border-slate-300"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute cursor-pointer right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors duration-300"
+                        >
+                            {showPassword ? <FaEyeSlash size={25} /> : <FaEye size={25}/>}
+                        </button>
                     </div>
 
                     {/* OTP */}
@@ -208,8 +224,8 @@ const RestaurantLoginPage = () => {
                         type="submit"
                         className="w-full cursor-pointer bg-orange-500 hover:bg-orange-600 text-white py-3 sm:py-4 rounded-xl font-bold shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
-                        <span>Login to Dashboard</span>
-                        <FaArrowRight className="text-sm" />
+                        <span>{loginRestaurantMutation.isPending ? "Loggin in...." : "Login to Dashboard"}</span>
+                        <FaArrowRight className={`text-sm ${loginRestaurantMutation.isPending ? "hidden" : ""}`} />
                     </button>
                 </form>
 

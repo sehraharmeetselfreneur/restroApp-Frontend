@@ -42,13 +42,13 @@ const App = () => {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         staleTime: 0,
-        cacheTime: 0
+        cacheTime: 0,
     });
 
     const restaurantQuery = useQuery({
         queryKey: ["restaurantProfile"],
         queryFn: getRestaurantProfile,
-        enabled: false,
+        enabled: authInitialized && (!user || customerQuery.isError),
         retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
@@ -57,16 +57,16 @@ const App = () => {
     });
 
     useEffect(() => {
-        if (customerQuery.isSuccess && customerQuery.data) {
-            setUser(customerQuery.data.profile, "Customer");
-        } else if (customerQuery.isError && !restaurantQuery.isFetching && !restaurantQuery.isSuccess) {
+        if (customerQuery.isSuccess) {
+            setUser(customerQuery.data, "Customer");
+        } else if (customerQuery.isError && !customerQuery.isPending && !restaurantQuery.isFetching && !restaurantQuery.isSuccess) {
             console.log("Customer query error, trying restaurant");
             restaurantQuery.refetch();
         }
-    }, [customerQuery.isSuccess, customerQuery.isError, customerQuery.data]);
+    }, [customerQuery.isSuccess, customerQuery.isError, customerQuery.data, customerQuery.isPending]);
     useEffect(() => {
         if (restaurantQuery.isSuccess && restaurantQuery.data) {
-            setUser(restaurantQuery.data.profile, "Restaurant");
+            setUser(restaurantQuery.data, "Restaurant");
         } else if (restaurantQuery.isError) {
             clearUser();
         }
