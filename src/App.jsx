@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,7 +21,8 @@ import HomePage from "./pages/HomePage";
 
 //Restaurant Pages
 import RestaurantDashboardPage from "./pages/restaurant/RestaurantDashboardPage";
-import { useEffect, useState } from "react";
+import CustomerSignupPage from "./pages/auth/CustomerSignupPage";
+import CustomerLoginPage from "./pages/auth/CustomerLoginPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -83,12 +85,12 @@ const App = () => {
                 <Route path="/restaurant/signup" element={!user ? <RestaurantSignupPage /> : <Navigate to={"/restaurant/dashboard"} />} />
                 <Route path="/restaurant/login" element={!user ? <RestaurantLoginPage /> : <Navigate to={"/restaurant/dashboard"} />} />
 
-                {/* <Route path="/signup" element={user ? <HomePage /> : <CustomerSignupPage />} />
-                <Route path="/login" element={user ? <HomePage /> : <CustomerLoginPage />} /> */}
+                <Route path="/customer/signup" element={!user ? <CustomerSignupPage /> : <Navigate to={"/"} />} />
+                <Route path="/customer/login" element={!user ? <CustomerLoginPage /> : <Navigate to={"/"} />} />
 
                 <Route path="/" element={<HomePage />} />
 
-                <Route path="/restaurant/dashboard" element={user ? <RestaurantDashboardPage /> : <RestaurantLoginPage />} />
+                <Route path="/restaurant/dashboard" element={(user && role === "Restaurant") ? <RestaurantDashboardPage /> : <Navigate to={"/restaurant/login"} />} />
             </Routes>
         </div>
     )

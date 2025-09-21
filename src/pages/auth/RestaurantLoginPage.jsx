@@ -18,11 +18,11 @@ const RestaurantLoginPage = () => {
     const loginRestaurantMutation = useMutation({
         mutationFn: loginRestaurant,
         onSuccess: () => {
-        localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
-        queryClient.refetchQueries({ queryKey: ["restaurantProfile"] });
-        window.location.replace('/restaurant/dashboard');
-        toast.success("Login successful");
-    },
+            localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
+            queryClient.refetchQueries({ queryKey: ["restaurantProfile"] });
+            window.location.replace('/restaurant/dashboard');
+            toast.success("Login successful");
+        },
         onError: (err) => {
             toast.error(err.response.data.message);
         }
