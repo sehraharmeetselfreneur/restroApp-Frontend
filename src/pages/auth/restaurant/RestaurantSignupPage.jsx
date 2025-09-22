@@ -4,17 +4,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import validator from 'validator';
 
 //Icons and Toast notification
-import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus, FaUser, FaRegCreditCard, FaBuilding, FaMobile, FaEyeSlash, FaEye } from "react-icons/fa";
+import { FaUtensils, FaFileUpload, FaClock, FaFileAlt, FaCheckCircle, FaArrowRight, FaTimes, FaCamera, FaPlus, FaUser, FaRegCreditCard, FaBuilding, FaMobile, FaEyeSlash, FaEye, FaUserAlt } from "react-icons/fa";
 import { MdEmail, MdPhone, MdLocationOn, MdRestaurant, MdImage, MdAccessTime, MdDescription, MdOutlineWifiPassword } from "react-icons/md";
 import { CiBank } from "react-icons/ci";
 import toast from "react-hot-toast";
 
 //API functions
-import { registerRestaurant } from "../../api/restaurantApi";
+import { registerRestaurant } from "../../../api/restaurantApi";
 
 //Components
-import MobileStepIndicator from '../../components/auth/MobileStepIndicator';
-import VerticalStepNavigation from "../../components/auth/VerticalStepNavigation";
+import MobileStepIndicator from '../../../components/auth/MobileStepIndicator';
+import VerticalStepNavigation from "../../../components/auth/VerticalStepNavigation";
 
 const steps = [
     { 
@@ -199,6 +199,7 @@ const RestaurantSignupPage = () => {
             ? JSON.parse(saved)
             :   {
                     restaurantName: "",
+                    ownerName: "",
                     description: "",
                     cuisines: [],
                     phone: "",
@@ -505,7 +506,8 @@ const RestaurantSignupPage = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            {/* Restaurant Name */}
+                                            {/* Restaurant Name & Owner Name */}
+                                            <div className="grid grid-cols-2 gap-5">
                                             <div className="relative group">
                                                 <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
                                                     <MdRestaurant />
@@ -517,6 +519,19 @@ const RestaurantSignupPage = () => {
                                                     onChange={(e) => handleInputChange('restaurantName', e.target.value)}
                                                     className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
                                                 />
+                                            </div>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors duration-300">
+                                                    <FaUserAlt />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Restaurant Name *"
+                                                    value={formData.ownerName}
+                                                    onChange={(e) => handleInputChange('ownerName', e.target.value)}
+                                                    className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"
+                                                />
+                                            </div>
                                             </div>
 
                                             {/* Description */}

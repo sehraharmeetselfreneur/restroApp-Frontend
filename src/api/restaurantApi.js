@@ -6,6 +6,7 @@ export const registerRestaurant = async ({ formData, documents }) => {
 
         //Normal fields
         data.append("restaurantName", formData.restaurantName);
+        data.append("ownerName", formData.ownerName);
         data.append("description", formData.description);
         data.append("phone", formData.phone);
         data.append("email", formData.email);

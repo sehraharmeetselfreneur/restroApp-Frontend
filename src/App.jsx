@@ -6,25 +6,27 @@ import { useQuery } from "@tanstack/react-query";
 import useAuthStore from "./store/useAuthStore";
 
 //API Calls
-import { getCustomerProfile } from "./api/customerApi";
+import { getAdminProfile } from "./api/adminApi";
 import { getRestaurantProfile } from "./api/restaurantApi";
+import { getCustomerProfile } from "./api/customerApi";
 
 //PageLoader
 import PageLoader from "./components/PageLoader";
 
 //Auth Pages
-import RestaurantSignupPage from "./pages/auth/RestaurantSignupPage";
-import RestaurantLoginPage from "./pages/auth/RestaurantLoginPage";
+import RestaurantSignupPage from "./pages/auth/restaurant/RestaurantSignupPage";
+import RestaurantLoginPage from "./pages/auth/restaurant/RestaurantLoginPage";
 
 //Public Pages
 import HomePage from "./pages/HomePage";
 
 //Restaurant Pages
-import RestaurantDashboardPage from "./pages/restaurant/RestaurantDashboardPage";
-import CustomerSignupPage from "./pages/auth/CustomerSignupPage";
-import CustomerLoginPage from "./pages/auth/CustomerLoginPage";
+import RestaurantDashboardPage from "./pages/dashboards/RestaurantDashboardPage";
+import CustomerSignupPage from "./pages/auth/customer/CustomerSignupPage";
+import CustomerLoginPage from "./pages/auth/customer/CustomerLoginPage";
 import AdminSignupPage from "./pages/auth/admin/AdminSignupPage";
-import { getAdminProfile } from "./api/adminApi";
+import AdminLoginPage from "./pages/auth/admin/AdminLoginPage";
+import AdminDashboardPage from "./pages/dashboards/AdminDashboardPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -98,13 +100,15 @@ const App = () => {
     }
 
     console.log(user);
+    console.log(role === "Admin" ? true : false);
     return (
         <div>
             <Routes>
-                <Route path="/admin/signup" element={!user ? <AdminSignupPage /> : <Navigate to={"/admin"} />} /> 
+                <Route path="/admin/signup" element={!user ? <AdminSignupPage /> : (user && role === "Admin" ? <Navigate to={"/admin"} /> : <Navigate to={"/"} />)} />
+                <Route path="/admin/login" element={!user ? <AdminLoginPage /> : (user && role === "Admin" ? <Navigate to={"/admin"} /> : <Navigate to={"/"} />)} />
 
-                <Route path="/restaurant/signup" element={!user ? <RestaurantSignupPage /> : <Navigate to={"/restaurant/dashboard"} />} />
-                <Route path="/restaurant/login" element={!user ? <RestaurantLoginPage /> : <Navigate to={"/restaurant/dashboard"} />} />
+                <Route path="/restaurant/signup" element={!user ? <RestaurantSignupPage /> : (user && role === "Restaurant" ? <Navigate to={"/restaurant/dashboard"} /> : <Navigate to={"/"} />)} />
+                <Route path="/restaurant/login" element={!user ? <RestaurantLoginPage /> : (user && role === "Restaurant" ? <Navigate to={"/restaurant/dashboard"} /> : <Navigate to={"/"} />)} />
 
                 <Route path="/customer/signup" element={!user ? <CustomerSignupPage /> : <Navigate to={"/"} />} />
                 <Route path="/customer/login" element={!user ? <CustomerLoginPage /> : <Navigate to={"/"} />} />
@@ -112,6 +116,7 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
 
                 <Route path="/restaurant/dashboard" element={(user && role === "Restaurant") ? <RestaurantDashboardPage /> : <Navigate to={"/restaurant/login"} />} />
+                <Route path="/admin" element={user === null ? <PageLoader /> : role === "Admin" ? <AdminDashboardPage /> : <Navigate to="/" />} />
             </Routes>
         </div>
     )

@@ -6,7 +6,7 @@ import { IoRestaurantOutline, IoGiftOutline } from 'react-icons/io5';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { registerCustomer } from '../../api/customerApi';
+import { registerCustomer } from '../../../api/customerApi';
 import validator from 'validator';
 
 const CustomerSignupPage = () => {

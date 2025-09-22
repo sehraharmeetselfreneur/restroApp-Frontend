@@ -28,13 +28,11 @@ const RestaurantDashboardPage = () => {
       onSuccess: () => {
           toast.success("Logged out successfully!");
           queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
-          setTimeout(() => {
-                  navigate("/restaurant/login");
-              }, 100);
           clearUser();
+          window.location.replace("/restaurant/login");
       },
-      onError: () => {
-          toast.error("Something went wrong");
+      onError: (error) => {
+          toast.error(error.response.data?.message || "Something went wrong");
       }
     })
 

@@ -9,7 +9,7 @@ import { FaEnvelope, FaKey, FaArrowRight, FaEyeSlash, FaEye } from "react-icons/
 import { MdOutlineWifiPassword } from "react-icons/md";
 
 //API Functions
-import { generateOtp, loginRestaurant, verifyOtp } from "../../api/restaurantApi";
+import { generateOtp, loginRestaurant, verifyOtp } from "../../../api/restaurantApi";
 
 const RestaurantLoginPage = () => {
     const queryClient = useQueryClient();

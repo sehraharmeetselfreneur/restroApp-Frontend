@@ -55,7 +55,6 @@ const AdminSignupPage = () => {
     const [profileImage, setProfileImage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
     const registerAdminMutation = useMutation({
         mutationFn: registerAdmin,
@@ -480,14 +479,14 @@ const AdminSignupPage = () => {
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={isLoading}
+                                disabled={registerAdminMutation.isPending}
                                 className={`w-full py-5 px-8 cursor-pointer rounded-2xl font-bold text-white text-lg transition-all ${
-                                    isLoading
+                                    registerAdminMutation.isPending
                                         ? 'bg-gray-400 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transform hover:scale-[1.02] shadow-xl hover:shadow-2xl'
                                 }`}
                             >
-                                {isLoading ? (
+                                {registerAdminMutation.isPending ? (
                                     <span className="flex items-center justify-center gap-3">
                                         <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
                                         Creating Admin Account...

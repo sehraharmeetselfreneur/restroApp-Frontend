@@ -1,3 +1,5 @@
+import { FaCheckCircle } from "react-icons/fa";
+
 const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurrentStep  }) => {
     const handleStepClick = (stepId) => {
         if (stepId > currentStep) {

@@ -4,16 +4,20 @@ import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import validator from 'validator';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { loginCustomer } from '../../api/customerApi';
+import { loginCustomer } from '../../../api/customerApi';
 
 const CustomerLoginPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        otp: ''
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem("customerLoginForm");
+        return saved
+            ? JSON.parse(saved)
+            : {
+                email: "",
+                password: ""
+            }
     });
     const [showPassword, setShowPassword] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
