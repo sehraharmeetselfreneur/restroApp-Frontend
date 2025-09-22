@@ -23,6 +23,8 @@ import HomePage from "./pages/HomePage";
 import RestaurantDashboardPage from "./pages/restaurant/RestaurantDashboardPage";
 import CustomerSignupPage from "./pages/auth/CustomerSignupPage";
 import CustomerLoginPage from "./pages/auth/CustomerLoginPage";
+import AdminSignupPage from "./pages/auth/admin/AdminSignupPage";
+import { getAdminProfile } from "./api/adminApi";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -50,7 +52,7 @@ const App = () => {
     const restaurantQuery = useQuery({
         queryKey: ["restaurantProfile"],
         queryFn: getRestaurantProfile,
-        enabled: authInitialized && (!user || customerQuery.isError),
+        enabled: authInitialized && !user,
         retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
@@ -58,23 +60,40 @@ const App = () => {
         cacheTime: 0
     });
 
+    const adminQuery = useQuery({
+        queryKey: ["adminProfile"],
+        queryFn: getAdminProfile,
+        enabled: authInitialized && !user,
+        retry: false,
+        refetchOnWindowFocus: false
+    });
+
     useEffect(() => {
-        if (customerQuery.isSuccess) {
+        if (user) return; // user already set, no need to run
+
+        if (customerQuery.isSuccess && customerQuery.data) {
             setUser(customerQuery.data, "Customer");
-        } else if (customerQuery.isError && !customerQuery.isPending && !restaurantQuery.isFetching && !restaurantQuery.isSuccess) {
-            console.log("Customer query error, trying restaurant");
-            restaurantQuery.refetch();
-        }
-    }, [customerQuery.isSuccess, customerQuery.isError, customerQuery.data, customerQuery.isPending]);
-    useEffect(() => {
-        if (restaurantQuery.isSuccess && restaurantQuery.data) {
+        } else if (restaurantQuery.isSuccess && restaurantQuery.data) {
             setUser(restaurantQuery.data, "Restaurant");
-        } else if (restaurantQuery.isError) {
+        } else if (adminQuery.isSuccess && adminQuery.data) {
+            setUser(adminQuery.data, "Admin");
+        } else if (
+            customerQuery.isError &&
+            restaurantQuery.isError &&
+            adminQuery.isError
+        ) {
+            // Only call clearUser if it's not already null
             clearUser();
         }
-    }, [restaurantQuery.isSuccess, restaurantQuery.isError, restaurantQuery.data]);
+    }, [
+        user,
+        customerQuery.data, customerQuery.isSuccess, customerQuery.isError,
+        restaurantQuery.data, restaurantQuery.isSuccess, restaurantQuery.isError,
+        adminQuery.data, adminQuery.isSuccess, adminQuery.isError
+    ]);
 
-    if(!authInitialized || customerQuery.isLoading || restaurantQuery.isFetching){
+    if (!authInitialized || customerQuery.isLoading || customerQuery.isFetching ||
+        restaurantQuery.isLoading || restaurantQuery.isFetching || adminQuery.isLoading || adminQuery.isFetching){
         return <PageLoader />;
     }
 
@@ -82,6 +101,8 @@ const App = () => {
     return (
         <div>
             <Routes>
+                <Route path="/admin/signup" element={!user ? <AdminSignupPage /> : <Navigate to={"/admin"} />} /> 
+
                 <Route path="/restaurant/signup" element={!user ? <RestaurantSignupPage /> : <Navigate to={"/restaurant/dashboard"} />} />
                 <Route path="/restaurant/login" element={!user ? <RestaurantLoginPage /> : <Navigate to={"/restaurant/dashboard"} />} />
 
