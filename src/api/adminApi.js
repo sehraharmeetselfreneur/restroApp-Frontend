@@ -55,6 +55,28 @@ export const getAllRestaurants = async () => {
     }
 }
 
+export const approveRestaurant = async ({ isVerified, restaurantId }) => {
+    try{
+        const res = await axiosInstance.post(`/admin/verify-restaurant/${restaurantId}`, { isVerified });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in approveRestaurant: ", err);
+        throw err;
+    }
+}
+
+export const rejectRestaurant = async ({ isVerified, restaurantId }) => {
+    try{
+        const res = await axiosInstance.post(`/admin/verify-restaurant/${restaurantId}`, isVerified);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in rejectRestaurant: ", err);
+        throw err;
+    }
+}
+
 export const getAllCustomers = async () => {
     try{
         const res = await axiosInstance.get('/admin/customers');
@@ -62,6 +84,17 @@ export const getAllCustomers = async () => {
     }
     catch(err){
         console.log("Error in getAllCustomers: ", err);
+        throw err;
+    }
+}
+
+export const getAllOrders = async () => {
+    try{
+        const res = await axiosInstance.get('/admin/orders');
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in getAllOrders: ", err);
         throw err;
     }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import validator from 'validator';
 import toast from "react-hot-toast";
@@ -13,14 +13,15 @@ import { generateOtp, loginRestaurant, verifyOtp } from "../../../api/restaurant
 
 const RestaurantLoginPage = () => {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     //Required mutations for login
     const loginRestaurantMutation = useMutation({
         mutationFn: loginRestaurant,
         onSuccess: () => {
             localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
-            queryClient.refetchQueries({ queryKey: ["restaurantProfile"] });
-            window.location.replace('/restaurant/dashboard');
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+            navigate('/restaurant/dashboard');
             toast.success("Login successful");
         },
         onError: (err) => {

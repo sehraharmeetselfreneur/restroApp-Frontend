@@ -90,7 +90,7 @@ export const getRestaurantProfile = async () => {
 
 export const restaurantLogout = async () => {
     try{
-        const res = axiosInstance.post('/restaurant/logout');
+        const res = axiosInstance.post('/restaurant/logout', {}, { withCredentials: true });
         return res.data;
     }
     catch(err){

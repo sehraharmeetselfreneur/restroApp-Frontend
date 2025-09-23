@@ -526,7 +526,7 @@ const RestaurantSignupPage = () => {
                                                 </div>
                                                 <input
                                                     type="text"
-                                                    placeholder="Restaurant Name *"
+                                                    placeholder="Owner Name *"
                                                     value={formData.ownerName}
                                                     onChange={(e) => handleInputChange('ownerName', e.target.value)}
                                                     className="w-full p-4 pl-12 font-medium bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all duration-300 outline-none hover:border-slate-300 group-focus-within:shadow-md"

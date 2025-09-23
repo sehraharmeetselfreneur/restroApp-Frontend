@@ -45,10 +45,7 @@ const App = () => {
         queryFn: getCustomerProfile,
         enabled: authInitialized && !user,
         retry: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        staleTime: 0,
-        cacheTime: 0,
+        refetchOnWindowFocus: false
     });
 
     const restaurantQuery = useQuery({
@@ -57,9 +54,6 @@ const App = () => {
         enabled: authInitialized && !user,
         retry: false,
         refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        staleTime: 0,
-        cacheTime: 0
     });
 
     const adminQuery = useQuery({
@@ -98,9 +92,8 @@ const App = () => {
         restaurantQuery.isLoading || restaurantQuery.isFetching || adminQuery.isLoading || adminQuery.isFetching){
         return <PageLoader />;
     }
-
     console.log(user);
-    console.log(role === "Admin" ? true : false);
+
     return (
         <div>
             <Routes>

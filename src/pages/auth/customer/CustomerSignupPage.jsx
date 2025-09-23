@@ -34,10 +34,10 @@ const CustomerSignupPage = () => {
                     tag: "",
                     geoLocation: { lat: null, lng: null },
                 },
-                profileImage: ''
+                profileImage: null
               };
     });
-    const [profileImage, setProfileImage] = useState('');
+    const [profileImage, setProfileImage] = useState(null);
     const [currentStep, setCurrentStep] = useState(() => {
         const savedStep = localStorage.getItem("restaurantCurrentStep");
         return savedStep ? Number(savedStep) : 1;
@@ -374,7 +374,7 @@ const CustomerSignupPage = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         placeholder="Password"
-                        className="w-full pl-14 pr-14 py-5 bg-white border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-300 text-lg hover:border-gray-300 hover:shadow-lg"
+                        className="w-full pl-14 pr-14 py-5 font-medium bg-white border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-300 text-lg hover:border-gray-300 hover:shadow-lg"
                     />
                     <button
                         type="button"
@@ -623,7 +623,7 @@ const CustomerSignupPage = () => {
         </div>
     );
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (validateStep(3)) {
             console.log(formData);
             registerCustomerMutation.mutate(formData);

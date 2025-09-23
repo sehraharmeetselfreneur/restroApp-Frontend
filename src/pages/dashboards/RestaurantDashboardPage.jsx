@@ -19,6 +19,9 @@ const RestaurantDashboardPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
+    // Get restaurant data from Zustand store
+    const { user, clearUser } = useAuthStore();
+
     const [activeTab, setActiveTab] = useState('overview');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
@@ -29,15 +32,12 @@ const RestaurantDashboardPage = () => {
           toast.success("Logged out successfully!");
           queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
           clearUser();
-          window.location.replace("/restaurant/login");
+          setTimeout(() => navigate("/restaurant/login"), 0);
       },
       onError: (error) => {
           toast.error(error.response.data?.message || "Something went wrong");
       }
-    })
-
-    // Get restaurant data from Zustand store
-    const { user, clearUser } = useAuthStore();
+    });
 
     // Mock orders data for demo (you can replace this with actual orders from API)
     const ordersData = [

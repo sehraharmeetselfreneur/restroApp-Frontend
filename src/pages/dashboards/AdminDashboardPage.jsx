@@ -58,24 +58,73 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAuthStore from "../../store/useAuthStore";
-import { getAllCustomers, getAllRestaurants, logoutAdmin } from "../../api/adminApi";
+import { approveRestaurant, getAllCustomers, getAllOrders, getAllRestaurants, logoutAdmin, rejectRestaurant } from "../../api/adminApi";
 import toast from "react-hot-toast";
 
 const AdminDashboardPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    
-
     const { user, clearUser } = useAuthStore();
     const admin = user.profile;
 
     const [allRestaurants, setAllRestaurants] = useState([]);
     const [restaurantCount, setRestaurantCount] = useState(0);
+    const [approvedRestaurantTodayCount, setApprovedRestaurantTodayCount] = useState(0);
+    const [rejectedRestaurantCount, setRejectedRestaurantCount] = useState(0)
+    const [verificationNotes, setVerificationNotes] = useState("");
+    const [selectedRestaurant, setSelectedRestaurant] = useState(() => {
+        const saved = localStorage.getItem("adminSelectedRestaurant");
+        return saved ? JSON.parse(saved) : null;
+    });
+    const [selectedRestaurantMenu, setSelectedRestaurantMenu] = useState({
+        menu: selectedRestaurant?.menu,
+        items: selectedRestaurant?.foodItems
+    });
 
     const [allCustomers, setAllCustomers] = useState([]);
+    const [customersCount, setCustomersCount] = useState(0);
+    const [selectedCustomer, setSelectedCustomer] = useState(() => {
+        const saved = localStorage.getItem("adminSelectedCustomer");
+        return saved ? JSON.parse(saved) : null;
+    });
+
+    const [allOrders, setAllOrders] = useState([]);
+    const [allOrdersCount, setAllOrdersCount] = useState(0);
+
+    //Unverified Restaurants
+    const [unverifiedRestaurants, setUnverifiedRestaurants] = useState(allRestaurants.filter(r => r.isVerified === false));
+
+    const recalcUnverified = () => {
+      setUnverifiedRestaurants(allRestaurants.filter(r => !r.isVerified));
+    };
+
+    useEffect(() => {
+      setUnverifiedRestaurants(allRestaurants.filter(r => r.isVerified === false));
+    }, [allRestaurants]);
+
+    useEffect(() => {
+      // Get current time
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setHours(24, 0, 0, 0); // next midnight
+  
+      // Time left until midnight
+      const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+  
+      // Reset at midnight
+      const timeout = setTimeout(() => {
+        setApprovedRestaurantTodayCount(0);
+  
+        // From now on, reset every 24h
+        setInterval(() => {
+          setApprovedRestaurantTodayCount(0);
+        }, 24 * 60 * 60 * 1000);
+      }, timeUntilMidnight);
+      return () => clearTimeout(timeout);
+    }, []);
 
     const getAllRestaurantMutation = useMutation({
         mutationFn: getAllRestaurants,
@@ -86,7 +135,53 @@ const AdminDashboardPage = () => {
         onError: (error) => {
             toast.error(error.response.data?.message || "Something went wrong");
         }
+    });
+
+    const approveRestaurantMutation = useMutation({
+        mutationFn: approveRestaurant,
+        onSuccess: () => {
+            toast.success("Restaurant approved successfully!");
+            setSelectedRestaurant(null);
+            recalcUnverified();
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
+
+    const rejectRestaurantMutation = useMutation({
+        mutationFn: rejectRestaurant,
+        onSuccess: () => {
+            toast.success("Restaurant rejected successfully!");
+            setSelectedRestaurant(null);
+            recalcUnverified();
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
     })
+
+    const getAllCustomersMutation = useMutation({
+        mutationFn: getAllCustomers,
+        onSuccess: (data) => {
+            setAllCustomers(data.customers);
+            setCustomersCount(data.customersCount);
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
+
+    const getAllOrdersMutation = useMutation({
+        mutationFn: getAllOrders,
+        onSuccess: (data) => {
+            setAllOrders(data.orders);
+            setAllOrdersCount(data.ordersCount);
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
 
     const logoutAdminMutation = useMutation({
         mutationFn: logoutAdmin,
@@ -101,13 +196,34 @@ const AdminDashboardPage = () => {
         }
     });
 
+    const handleRestaurantApprove = () => {
+        approveRestaurantMutation.mutate({ isVerified: true, restaurantId: selectedRestaurant._id });
+        setApprovedRestaurantTodayCount(prev => prev+1);
+    }
+
+    const handleRestaurantReject = () => {
+        rejectRestaurantMutation.mutate({ isVerified: false, restaurantId: selectedRestaurant._id });
+        setRejectedRestaurantCount(prev => prev+1);
+    }
+
     useEffect(() => {
         getAllRestaurantMutation.mutate();
+        getAllCustomersMutation.mutate();
+        getAllOrdersMutation.mutate();
     }, []);
 
-    const [activeTab, setActiveTab] = useState("dashboard");
     const [filter, setFilter] = useState("");
     const [timeRange, setTimeRange] = useState("7d");
+    const [activeTab, setActiveTab] = useState(() => {
+        const saved = localStorage.getItem("adminDashboardActiveTab");
+        return saved ? saved : "dashboard";
+    });
+
+    useEffect(() => {
+        localStorage.setItem("adminDashboardActiveTab", activeTab);
+        localStorage.setItem("adminSelectedRestaurant", JSON.stringify(selectedRestaurant));
+        localStorage.setItem("adminSelectedCustomer", JSON.stringify(selectedCustomer));
+    }, [activeTab, selectedRestaurant, selectedCustomer]);
 
     // Enhanced dummy data
     const stats = {
@@ -121,73 +237,6 @@ const AdminDashboardPage = () => {
       newRegistrations: "23"
     };
 
-    const restaurants = [
-      { 
-        id: 1, 
-        name: "Spice Garden", 
-        owner: "Rajesh Kumar", 
-        city: "Delhi", 
-        rating: 4.8, 
-        status: "active", 
-        orders: 45, 
-        revenue: "₹15,680", 
-        phone: "+91-9876543210",
-        joinDate: "2023-05-15",
-        category: "North Indian"
-      },
-      { 
-        id: 2, 
-        name: "Pizza Corner", 
-        owner: "Amit Patel", 
-        city: "Mumbai", 
-        rating: 4.2, 
-        status: "pending", 
-        orders: 32, 
-        revenue: "₹12,450", 
-        phone: "+91-9876543211",
-        joinDate: "2023-07-20",
-        category: "Italian"
-      },
-      { 
-        id: 3, 
-        name: "Burger Hub", 
-        owner: "Priya Singh", 
-        city: "Bangalore", 
-        rating: 4.5, 
-        status: "inactive", 
-        orders: 28, 
-        revenue: "₹8,920", 
-        phone: "+91-9876543212",
-        joinDate: "2023-06-10",
-        category: "Fast Food"
-      },
-    ];
-
-    const customers = [
-      { 
-        id: 1, 
-        name: "Rohit Sharma", 
-        email: "rohit@example.com", 
-        city: "Delhi", 
-        orders: 23, 
-        spent: "₹4,560", 
-        joinDate: "2023-03-15",
-        status: "active",
-        phone: "+91-9876543213"
-      },
-      { 
-        id: 2, 
-        name: "Priya Kapoor", 
-        email: "priya@example.com", 
-        city: "Mumbai", 
-        orders: 18, 
-        spent: "₹3,240", 
-        joinDate: "2023-04-20",
-        status: "active",
-        phone: "+91-9876543214"
-      },
-    ];
-
     const recentOrders = [
       { id: "#ORD001", customer: "John Doe", restaurant: "Spice Garden", amount: "₹485", status: "delivered", time: "2 min ago" },
       { id: "#ORD002", customer: "Jane Smith", restaurant: "Pizza Corner", amount: "₹720", status: "preparing", time: "5 min ago" },
@@ -200,80 +249,6 @@ const AdminDashboardPage = () => {
       { type: "info", message: "System maintenance scheduled", time: "1 hour ago" },
       { type: "success", message: "Payment system updated", time: "2 hours ago" },
     ];
-
-    // Restaurant verification data
-    const pendingRestaurants = [
-      {
-        id: "REST001",
-        name: "Mumbai Masala Kitchen",
-        owner: "Ravi Patel",
-        email: "ravi.patel@mumbaimasala.com",
-        phone: "+91-9876543220",
-        address: "123, MG Road, Mumbai, Maharashtra 400001",
-        category: "Indian Cuisine",
-        submitDate: "2024-09-20",
-        documents: {
-          license: "food_license_001.pdf",
-          gst: "gst_certificate_001.pdf",
-          identity: "owner_id_001.pdf",
-          bankDetails: "bank_details_001.pdf"
-        },
-        description: "Authentic Mumbai street food and traditional Indian cuisine with over 15 years of culinary experience.",
-        menu: [
-          { name: "Vada Pav", price: "₹25", category: "Snacks", image: "vada_pav.jpg", description: "Mumbai's iconic street food" },
-          { name: "Pav Bhaji", price: "₹80", category: "Main Course", image: "pav_bhaji.jpg", description: "Spicy vegetable curry with bread" },
-          { name: "Biryani", price: "₹180", category: "Main Course", image: "biryani.jpg", description: "Aromatic basmati rice with spices" },
-          { name: "Masala Chai", price: "₹15", category: "Beverages", image: "chai.jpg", description: "Traditional Indian spiced tea" },
-          { name: "Gulab Jamun", price: "₹40", category: "Desserts", image: "gulab_jamun.jpg", description: "Sweet milk dumplings in syrup" }
-        ],
-        businessHours: "9:00 AM - 11:00 PM",
-        deliveryRadius: "5 km",
-        avgPreparationTime: "25 minutes",
-        specialties: ["Vegetarian", "North Indian", "Street Food"],
-        socialMedia: {
-          instagram: "@mumbaimasala",
-          facebook: "MumbaiMasalaKitchen"
-        }
-      },
-      {
-        id: "REST002",
-        name: "Pizza Paradise",
-        owner: "Maria Rossi",
-        email: "maria@pizzaparadise.com",
-        phone: "+91-9876543221",
-        address: "456, Brigade Road, Bangalore, Karnataka 560001",
-        category: "Italian Cuisine",
-        submitDate: "2024-09-19",
-        documents: {
-          license: "food_license_002.pdf",
-          gst: "gst_certificate_002.pdf",
-          identity: "owner_id_002.pdf",
-          bankDetails: "bank_details_002.pdf"
-        },
-        description: "Authentic Italian pizzas made with imported ingredients and traditional wood-fired oven.",
-        menu: [
-          { name: "Margherita Pizza", price: "₹320", category: "Pizza", image: "margherita.jpg", description: "Classic pizza with tomato and mozzarella" },
-          { name: "Pepperoni Pizza", price: "₹450", category: "Pizza", image: "pepperoni.jpg", description: "Spicy pepperoni with cheese" },
-          { name: "Caesar Salad", price: "₹180", category: "Salads", image: "caesar.jpg", description: "Fresh romaine with Caesar dressing" },
-          { name: "Garlic Bread", price: "₹120", category: "Appetizers", image: "garlic_bread.jpg", description: "Crispy bread with garlic butter" },
-          { name: "Tiramisu", price: "₹180", category: "Desserts", image: "tiramisu.jpg", description: "Classic Italian dessert" }
-        ],
-        businessHours: "11:00 AM - 12:00 AM",
-        deliveryRadius: "8 km",
-        avgPreparationTime: "30 minutes",
-        specialties: ["Wood Fired", "Italian Authentic", "Vegetarian Options"],
-        socialMedia: {
-          instagram: "@pizzaparadise_blr",
-          facebook: "PizzaParadiseBangalore"
-        }
-      }
-    ];
-
-    //Unverified Restaurants
-    const unverifiedRestaurants = allRestaurants.filter(r => r.isVerified === false);
-
-    const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-    const [verificationNotes, setVerificationNotes] = useState("");
 
     const getStatusBadge = (status) => {
       const styles = {
@@ -309,9 +284,9 @@ const AdminDashboardPage = () => {
             r.restaurantName.toLowerCase().includes(filter.toLowerCase())
           );
         case "customers":
-          return customers.filter(c => 
-            c.city.toLowerCase().includes(filter.toLowerCase()) ||
-            c.name.toLowerCase().includes(filter.toLowerCase())
+          return allCustomers.filter(c => 
+            c.address[0].city.toLowerCase().includes(filter.toLowerCase()) ||
+            c.customerName.toLowerCase().includes(filter.toLowerCase())
           );
         case "orders":
           return recentOrders.filter(o => 
@@ -351,7 +326,7 @@ const AdminDashboardPage = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() =>{ setActiveTab(item.id); setSelectedRestaurant(null); }}
                 className={`flex cursor-pointer items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 group ${
                   activeTab === item.id
                     ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
@@ -370,7 +345,7 @@ const AdminDashboardPage = () => {
         
         {/* Logout Button */}
         <div className="p-4 border-t border-orange-100/50">
-          <button onClick={handleLogout} className="flex items-center gap-3 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl transition-all w-full">
+          <button onClick={handleLogout} className="flex cursor-pointer items-center gap-3 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl transition-all w-full">
             <LogOut size={18} />
             <span className="font-medium">Logout</span>
           </button>
@@ -456,7 +431,7 @@ const AdminDashboardPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-gray-600 mb-1">Total Orders</h3>
-                      <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
+                      <p className="text-3xl font-bold text-gray-900">{allOrdersCount}</p>
                       <div className="flex items-center mt-2 text-blue-600">
                         <TrendingUp size={16} />
                         <span className="text-sm ml-1">+8.2%</span>
@@ -488,7 +463,7 @@ const AdminDashboardPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-gray-600 mb-1">Active Users</h3>
-                      <p className="text-3xl font-bold text-gray-900">{stats.totalCustomers}</p>
+                      <p className="text-3xl font-bold text-gray-900">{customersCount}</p>
                       <div className="flex items-center mt-2 text-purple-600">
                         <Users size={16} />
                         <span className="text-sm ml-1">+{stats.newRegistrations} today</span>
@@ -560,7 +535,7 @@ const AdminDashboardPage = () => {
           {activeTab === "restaurants" && (
             <div className="space-y-6">
               {/* Action Bar */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+              <div className={`flex flex-col sm:flex-row gap-4 ${selectedRestaurant ? "hidden" : ""} justify-between items-start sm:items-center`}>
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -597,22 +572,237 @@ const AdminDashboardPage = () => {
               ) : (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-orange-100/50 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    {selectedRestaurant ? (
+                        /* Detailed Restaurant */
+                        <div className="space-y-6 p-5">
+                          {/* Back Button and Header */}
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-end gap-4">
+                              <h3 className="text-2xl font-bold text-gray-800">{selectedRestaurant.restaurantName}</h3>
+                              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                                ID: {selectedRestaurant._id}
+                              </span>
+                            </div>
+                            <button 
+                              onClick={() => setSelectedRestaurant(null)}
+                              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white border border-orange-200 text-gray-700 rounded-lg hover:bg-orange-50 transition-all"
+                            >
+                              ← Back to List
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Restaurant Details */}
+                            <div className="lg:col-span-2 space-y-6">
+                              {/* Basic Information */}
+                              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <Building2 className="text-orange-600" size={24} />
+                                  <h4 className="text-xl font-semibold text-gray-800">Restaurant Information</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Restaurant Name</label>
+                                    <p className="text-gray-900 font-medium">{selectedRestaurant.restaurantName}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Category</label>
+                                    <p className="text-gray-900">{selectedRestaurant.cuisines[0]}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Owner Name</label>
+                                    <p className="text-gray-900">{selectedRestaurant.ownerName}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Contact Number</label>
+                                    <p className="text-gray-900">+91-{selectedRestaurant.phone}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Email Address</label>
+                                    <p className="text-gray-900">{selectedRestaurant.email}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Geo-Location</label>
+                                    <p className="text-gray-900">{selectedRestaurant.address.geoLocation.lat.toFixed(6)}, {selectedRestaurant.address.geoLocation.lng.toFixed(6)}</p>
+                                  </div>
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Address</label>
+                                    <p className="text-gray-900">{selectedRestaurant.address.street}, {selectedRestaurant.address.city}, {selectedRestaurant.address.state}</p>
+                                  </div>
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Description</label>
+                                    <p className="text-gray-700">{selectedRestaurant.description}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Business Details */}
+                              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <Clock4 className="text-orange-600" size={24} />
+                                  <h4 className="text-xl font-semibold text-gray-800">Business Details</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Business Hours</label>
+                                    <p className="text-gray-900">{selectedRestaurant.openingTime}-{selectedRestaurant.closingTime}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Delivery Radius</label>
+                                    <p className="text-gray-900">{selectedRestaurant.deliveryRadius || "NA"}</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Avg Prep Time</label>
+                                    <p className="text-gray-900">{selectedRestaurant.avgPreparationTime || "NA"}</p>
+                                  </div>
+                                </div>
+                                <div className="mt-4">
+                                  <label className="block text-sm font-medium text-gray-600 mb-2">Cuisines</label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {selectedRestaurant.cuisines.map((cuisine, idx) => (
+                                      <span key={idx} className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
+                                        {cuisine}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                                
+                            {/* Documents and Actions Sidebar */}
+                            <div className="space-y-6">
+                              {/* Documents */}
+                              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <FileText className="text-orange-600" size={24} />
+                                  <h4 className="text-lg font-semibold text-gray-800">Documents</h4>
+                                </div>
+                                <div className="space-y-3">
+                                  {Object.entries(selectedRestaurant.documents).slice(0, 3).map(([type, filename]) => (
+                                    <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                      <div className="flex items-center gap-2">
+                                        <FileText size={16} className="text-gray-500" />
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-900 capitalize">
+                                            {type.replace(/([A-Z])/g, ' $1').trim()}
+                                          </p>
+                                          <p className="text-xs text-gray-500">{filename?.split("\\").pop().split("-").slice(1).join("-") || "No file"}</p>
+                                        </div>
+                                      </div>
+                                      <Link to={"http://localhost:5000/KYC" + filename?.split("KYC")[1]?.replace(/\\/g, "/")} target="_blank" className="p-1 hover:bg-gray-200 rounded text-blue-600">
+                                        <ExternalLink size={14} />
+                                      </Link>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Orders */}
+                              {selectedRestaurant.orders &&
+                                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Orders</h4>
+                                  {selectedRestaurant.orders.length > 0  ? (
+                                    <div className="space-y-3">
+                                      {selectedRestaurant.orders.map((order, idx) => (
+                                        <div
+                                          key={order._id || idx}
+                                          className="flex items-center justify-between border-b border-orange-100/50 pb-2 last:border-none"
+                                        >
+                                          {/* Left: Order ID */}
+                                          <div>
+                                            <p className="text-sm font-medium text-gray-700">Order ID: {order._id}</p>
+                                            <p className="text-xs text-gray-500">{order.items?.length || 0} items</p>
+                                          </div>
+                                        
+                                          {/* Right: Amount */}
+                                          <p className="text-sm font-semibold text-green-600">
+                                            ₹{order.finalAmount?.toLocaleString() || 0}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50 text-center text-gray-500">
+                                      No orders for now.
+                                    </div>
+                                  )}
+                                </div>
+                              }
+                            </div>
+
+                            {/* Menu Items */}
+                            <div className="lg:col-span-3 space-y-6">
+                              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <MenuIcon className="text-orange-600" size={24} />
+                                  <h4 className="text-xl font-semibold text-gray-800">Menu Items ({selectedRestaurant.cuisines.length || 0})</h4>
+                                </div>
+                                <div className={`${ selectedRestaurantMenu?.menu?.length ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "w-full"}`}>
+                                  {selectedRestaurantMenu.menu && selectedRestaurantMenu.menu.length > 0 ? (
+                                    selectedRestaurantMenu.menu.map((category, idx) => (
+                                      <div key={idx} className="mb-6">
+                                        {/* Category Title */}
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-orange-100 pb-1">
+                                          {category}
+                                        </h3>
+                                  
+                                        {/* Items under this category */}
+                                        <div className="space-y-3">
+                                          {selectedRestaurantMenu.items
+                                            .filter((item) => item.category === category)
+                                            .length > 0 ? (
+                                            selectedRestaurantMenu.items
+                                              .filter((item) => item.category === category)
+                                              .map((item, i) => (
+                                                <div
+                                                  key={i}
+                                                  className="flex gap-4 p-4 bg-gradient-to-r from-orange-50/30 to-amber-50/30 rounded-xl border border-orange-100/30"
+                                                >
+                                                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                    <ImageIcon className="text-gray-400" size={20} />
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <div className="flex items-start justify-between mb-1">
+                                                      <h5 className="font-medium text-gray-900">{item.name}</h5>
+                                                      <span className="font-semibold text-green-600">₹{item.price}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mb-1">{item.category}</p>
+                                                    <p className="text-sm text-gray-600">{item.description}</p>
+                                                  </div>
+                                                </div>
+                                              ))
+                                          ) : (
+                                            <p className="text-gray-500 text-sm">No items available in this category.</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-center text-gray-500 mt-6">This restaurant has no menu available.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    ) : (
+                        // Table of All Restaurants
+                        <table className="w-full">
                       <thead className="bg-gradient-to-r from-orange-50 to-amber-50">
                         <tr>
                           <th className="text-left py-4 px-6 font-semibold text-gray-700">Restaurant</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Owner</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Location</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Rating</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Orders</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Revenue</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
-                          <th className="text-left py-4 px-6 font-semibold text-gray-700">Actions</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Owner</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Location</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Rating</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Orders</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Revenue</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Status</th>
+                          <th className="text-center py-4 px-6 font-semibold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredData().map((restaurant, idx) => (
-                          <tr key={restaurant._id} className="border-t border-orange-100/50 hover:bg-orange-50/30 transition-colors">
+                          <tr key={restaurant._id} onClick={() => setSelectedRestaurant(restaurant)} className="border-t cursor-pointer border-orange-100/50 hover:bg-orange-50/30 transition-colors">
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-semibold">
@@ -625,36 +815,36 @@ const AdminDashboardPage = () => {
                               </div>
                             </td>
                             <td className="py-4 px-6">
-                              <div>
+                              <div className="flex flex-col items-center">
                                 <p className="font-medium text-gray-900">{restaurant.ownerName}</p>
-                                <p className="text-sm text-gray-500">{restaurant.phone}</p>
+                                <p className="text-sm text-gray-500">+91-{restaurant.phone}</p>
                               </div>
                             </td>
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-1">
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-1">
                                 <MapPin size={14} className="text-gray-400" />
                                 <span className="text-gray-900">{restaurant.address.city}</span>
                               </div>
                             </td>
                             <td className="py-4 px-6">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center justify-center gap-1">
                                 <Star className="text-yellow-400 fill-current" size={16} />
                                 <span className="font-medium">{restaurant.rating}</span>
                               </div>
                             </td>
-                            <td className="py-4 px-6">
-                              <span className="font-medium text-gray-900">{restaurant.orders || 0}</span>
+                            <td className="py-4 px-6 text-center">
+                              <span className="font-medium text-gray-900">{restaurant.orders.length || 0}</span>
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-4 px-6 text-center">
                               <span className="font-medium text-green-600">{restaurant.revenue || 0}</span>
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-4 px-6 text-center">
                               <span className={getStatusBadge(restaurant.isVerified)}>
                                 {restaurant.isVerified ? "Active" : "Inactive"}
                               </span>
                             </td>
                             <td className="py-4 px-6">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center justify-center gap-2">
                                 <button className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors">
                                   <Eye size={16} />
                                 </button>
@@ -670,6 +860,7 @@ const AdminDashboardPage = () => {
                         ))}
                       </tbody>
                     </table>
+                    )}
                   </div>
                 </div>
               )}
@@ -687,7 +878,7 @@ const AdminDashboardPage = () => {
                       <Clock4 className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">{pendingRestaurants.length}</p>
+                      <p className="text-2xl font-bold text-gray-900">{unverifiedRestaurants.length}</p>
                       <p className="text-sm text-gray-600">Pending Review</p>
                     </div>
                   </div>
@@ -698,7 +889,7 @@ const AdminDashboardPage = () => {
                       <ThumbsUp className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">24</p>
+                      <p className="text-2xl font-bold text-gray-900">{approvedRestaurantTodayCount}</p>
                       <p className="text-sm text-gray-600">Approved Today</p>
                     </div>
                   </div>
@@ -709,7 +900,7 @@ const AdminDashboardPage = () => {
                       <ThumbsDown className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">3</p>
+                      <p className="text-2xl font-bold text-gray-900">{rejectedRestaurantCount}</p>
                       <p className="text-sm text-gray-600">Rejected</p>
                     </div>
                   </div>
@@ -720,7 +911,7 @@ const AdminDashboardPage = () => {
                       <FileCheck className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">156</p>
+                      <p className="text-2xl font-bold text-gray-900">{allRestaurants.filter(r => r.isVerified === true).length}</p>
                       <p className="text-sm text-gray-600">Total Verified</p>
                     </div>
                   </div>
@@ -750,7 +941,10 @@ const AdminDashboardPage = () => {
                   </div>
                   
                   <div className="p-6 space-y-4">
-                    {unverifiedRestaurants.map((restaurant) => (
+                    {unverifiedRestaurants.length === 0 ? (
+                        <p className="text-gray-500 text-lg text-center font-medium">No Restaurants need verification for now.</p>
+                    ) : (
+                        unverifiedRestaurants.map((restaurant) => (
                       <div key={restaurant._id} className="bg-gradient-to-r from-orange-50/50 to-amber-50/50 p-6 rounded-xl border border-orange-100/50 hover:shadow-lg transition-all cursor-pointer">
                         <div className="flex items-start justify-between">
                           <div className="flex gap-4">
@@ -803,7 +997,7 @@ const AdminDashboardPage = () => {
                             </div>
                             <button 
                               onClick={() => setSelectedRestaurant(restaurant)}
-                              className="px-6 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg flex items-center gap-2"
+                              className="px-6 py-2 cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg flex items-center gap-2"
                             >
                               <Eye size={16} />
                               Review
@@ -825,7 +1019,8 @@ const AdminDashboardPage = () => {
                           )}
                         </div>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
                 </div>
               ) : (
@@ -1006,15 +1201,15 @@ const AdminDashboardPage = () => {
                       <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
                         <h4 className="text-lg font-semibold text-gray-800 mb-4">Actions</h4>
                         <div className="space-y-3">
-                          <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg">
+                          <button onClick={handleRestaurantApprove} className="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg">
                             <ThumbsUp size={16} />
-                            Approve Restaurant
+                            {approveRestaurantMutation.isPending ? "Approving..." : "Approve Restaurant"}
                           </button>
-                          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all">
+                          <button className="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all">
                             <AlertCircle size={16} />
                             Request More Info
                           </button>
-                          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all">
+                          <button onClick={handleRestaurantReject} className="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all">
                             <ThumbsDown size={16} />
                             Reject Application
                           </button>
@@ -1031,7 +1226,7 @@ const AdminDashboardPage = () => {
           {activeTab === "customers" && (
             <div className="space-y-6">
               {/* Action Bar */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+              <div className={`flex flex-col sm:flex-row ${selectedCustomer ? "hidden" : ""} gap-4 justify-between items-start sm:items-center`}>
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1055,66 +1250,167 @@ const AdminDashboardPage = () => {
               </div>
 
               {/* Customers Table */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-orange-100/50 overflow-hidden">
+              {selectedCustomer ? (
+                <div className="space-y-6">
+                  {/* Back Button and Header */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-end gap-4">
+                      <h3 className="text-2xl font-bold text-gray-800">{selectedCustomer.customerName}</h3>
+                      <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                        ID: {selectedCustomer._id}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedCustomer(null)}
+                      className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white border border-orange-200 text-gray-700 rounded-lg hover:bg-orange-50 transition-all"
+                    >
+                      ← Back to List
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-6">
+                  {/* Basic Information */}
+                  <div className="bg-white/80 col-span-2  backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-orange-100/50">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Users className="text-orange-600" size={24} />
+                      <h4 className="text-xl font-semibold text-gray-800">Customer Information</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Customer Name</label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.customerName}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Status</label>
+                        <p className="text-gray-900">{selectedCustomer.status === "active" ? "Active" : "Inactive"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">DOB</label>
+                        <p className="text-gray-900">{new Date(selectedCustomer.dob).toLocaleDateString("en-GB")}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Contact Number</label>
+                        <p className="text-gray-900">+91-{selectedCustomer.phone}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Email Address</label>
+                        <p className="text-gray-900">{selectedCustomer.email}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Geo-Location</label>
+                        <p className="text-gray-900">{selectedCustomer.address[0].geoLocation.lat.toFixed(6)}, {selectedCustomer.address[0].geoLocation.lng.toFixed(6)}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Address</label>
+                        <p className="text-gray-900">{selectedCustomer.address[0].street}, {selectedCustomer.address[0].city}, {selectedCustomer.address[0].state}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Gender</label>
+                        <p className="text-gray-700">{selectedCustomer.gender === "male" ? "Male" : "Female "}</p>
+                      </div>
+                    </div>
+                    </div>
+                    {/* Customer Orders */}
+                    {selectedCustomer.orders &&
+                      <div className="bg-white/80 backdrop-blur-sm p-6 flex flex-col rounded-2xl shadow-lg border border-orange-100/50">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4">Orders</h4>
+                        {selectedCustomer.orders.length > 0  ? (
+                          <div className="space-y-3">
+                            {selectedCustomer.orders.map((order, idx) => (
+                              <div
+                                key={order._id || idx}
+                                className="flex items-center justify-between border-b border-orange-100/50 pb-2 last:border-none"
+                              >
+                                {/* Left: Order ID */}
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Order ID: {order._id}</p>
+                                  <p className="text-xs text-gray-500">{order.items?.length || 0} items</p>
+                                </div>
+                              
+                                {/* Right: Amount */}
+                                <p className="text-sm font-semibold text-green-600">
+                                  ₹{order.finalAmount?.toLocaleString() || 0}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex justify-center items-center h-full font-medium p-6 box-border rounded-2xl text-center text-gray-500">
+                            No orders for now.
+                          </div>
+                        )}
+                      </div>
+                    }
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-orange-100/50 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  {allCustomers.length > 0 ? (
+                    <table className="w-full">
                     <thead className="bg-gradient-to-r from-orange-50 to-amber-50">
                       <tr>
                         <th className="text-left py-4 px-6 font-semibold text-gray-700">Customer</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Contact</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Location</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Orders</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Total Spent</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Join Date</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
-                        <th className="text-left py-4 px-6 font-semibold text-gray-700">Actions</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Contact</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Location</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Orders</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Total Spent</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Join Date</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Status</th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredData().map((customer, idx) => (
-                        <tr key={customer.id} className="border-t border-orange-100/50 hover:bg-orange-50/30 transition-colors">
+                        <tr key={customer._id} onClick={() => setSelectedCustomer(customer)} className="border-t border-orange-100/50 hover:bg-orange-50/30 cursor-pointer transition-colors">
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                {customer.name.split(' ').map(n => n[0]).join('')}
+                                {customer.customerName.split(' ').map(n => n[0]).join('')}
                               </div>
-                              <p className="font-medium text-gray-900">{customer.name}</p>
+                              <p className="font-medium text-gray-900">{customer.customerName}</p>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <div>
+                            <div className="flex flex-col items-center">
                               <div className="flex items-center gap-1 mb-1">
                                 <Mail size={14} className="text-gray-400" />
                                 <span className="text-sm text-gray-900">{customer.email}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Phone size={14} className="text-gray-400" />
-                                <span className="text-sm text-gray-500">{customer.phone}</span>
+                                <span className="text-sm text-gray-500">+91-{customer.phone}</span>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center justify-center gap-1">
                               <MapPin size={14} className="text-gray-400" />
-                              <span className="text-gray-900">{customer.city}</span>
+                              <span className="text-gray-900">{customer.address[0].city}</span>
                             </div>
                           </td>
-                          <td className="py-4 px-6">
-                            <span className="font-medium text-gray-900">{customer.orders}</span>
+                          <td className="py-4 px-6 text-center">
+                            <span className="font-medium text-gray-900">{customer.orders.length || 0}</span>
                           </td>
-                          <td className="py-4 px-6">
-                            <span className="font-medium text-green-600">{customer.spent}</span>
+                          <td className="py-4 px-6 text-center">
+                            <span className="font-medium text-green-600">{customer.spent || 0}</span>
                           </td>
-                          <td className="py-4 px-6">
-                            <span className="text-gray-500">{customer.joinDate}</span>
+                          <td className="py-4 px-6 text-center">
+                            <span className="text-gray-500">{(() => {
+                                                  const date = new Date(customer.createdAt);
+                                                  const day = String(date.getDate()).padStart(2, "0");
+                                                  const month = String(date.getMonth() + 1).padStart(2, "0");
+                                                  const year = date.getFullYear();
+                                                  return `${day}-${month}-${year}`;
+                                                })()}</span>
                           </td>
-                          <td className="py-4 px-6">
+                          <td className="py-4 px-6 text-center">
                             <span className={getStatusBadge(customer.status)}>
                               {customer.status}
                             </span>
                           </td>
                           <td className="py-4 px-6">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center gap-2">
                               <button className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors">
                                 <Eye size={16} />
                               </button>
@@ -1130,8 +1426,13 @@ const AdminDashboardPage = () => {
                       ))}
                     </tbody>
                   </table>
+                    ) : (
+                        <div className="text-center py-20 text-gray-500 font-medium text-lg">
+                          No Customers are registered on the website for now.
+                        </div>
+                  )}
                 </div>
-              </div>
+              </div>)}
             </div>
           )}
 
