@@ -4,10 +4,12 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import validator from "validator";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { loginAdmin } from "../../../api/adminApi";
+import { getAdminProfile, loginAdmin } from "../../../api/adminApi";
+import useAuthStore from "../../../store/useAuthStore";
 
 const AdminLoginPage = () => {
     const queryClient = useQueryClient();
+    const { setUser } = useAuthStore();
     const navigate = useNavigate();
 
     const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +25,9 @@ const AdminLoginPage = () => {
 
     const loginAdminMutation = useMutation({
         mutationFn: loginAdmin,
-        onSuccess: () => {
+        onSuccess: async () => {
             localStorage.removeItem("adminLoginForm");
+            setUser(await getAdminProfile(), "Admin");
             queryClient.invalidateQueries({ queryKey: ["adminProfile"] });
             toast.success("Admin logged in successfully!");
             navigate("/admin");

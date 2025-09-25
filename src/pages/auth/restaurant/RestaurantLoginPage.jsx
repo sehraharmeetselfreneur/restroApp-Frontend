@@ -9,20 +9,36 @@ import { FaEnvelope, FaKey, FaArrowRight, FaEyeSlash, FaEye } from "react-icons/
 import { MdOutlineWifiPassword } from "react-icons/md";
 
 //API Functions
-import { generateOtp, loginRestaurant, verifyOtp } from "../../../api/restaurantApi";
+import { generateOtp, getRestaurantProfile, loginRestaurant, verifyOtp } from "../../../api/restaurantApi";
+import useAuthStore from "../../../store/useAuthStore";
 
 const RestaurantLoginPage = () => {
     const queryClient = useQueryClient();
+    const { setUser } = useAuthStore();
     const navigate = useNavigate();
 
     //Required mutations for login
     const loginRestaurantMutation = useMutation({
         mutationFn: loginRestaurant,
-        onSuccess: () => {
-            localStorage.removeItem("restaurantLoginForm"); // Clear saved data after successful login
-            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
-            navigate('/restaurant/dashboard');
-            toast.success("Login successful");
+        onSuccess: async () => {
+            localStorage.removeItem("restaurantLoginForm");
+            try{
+                const profileData = await getRestaurantProfile();
+                
+                if(profileData){
+                    setUser(profileData, "Restaurant");
+                    await queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+                    navigate('/restaurant/dashboard');
+                    toast.success("Login successful");
+                }
+                else{
+                    toast.error("Failed to fetch profile after login");
+                }
+            }
+            catch(error){
+                console.error("Error fetching profile after login:", error);
+                toast.error("Login successful but failed to fetch profile");
+            }
         },
         onError: (err) => {
             toast.error(err.response.data.message);

@@ -39,7 +39,6 @@ export const getCustomerProfile = async () => {
         return res.data;
     }
     catch(err){
-        console.log("Error in getCustomerProfile: ", err);
         throw err;
     }
 }

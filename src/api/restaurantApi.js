@@ -16,11 +16,6 @@ export const registerRestaurant = async ({ formData, documents }) => {
 
         data.append("address", JSON.stringify(formData.address));
         data.append("licenseNumber", JSON.stringify(formData.licenseNumber));
-
-        // Cuisines array
-        // formData.cuisines.forEach((cuisine, index) => {
-        //   data.append(`cuisines[${index}]`, cuisine);
-        // });
         data.append("cuisines", JSON.stringify(formData.cuisines));
     
         // Images array (multiple files)
@@ -77,17 +72,6 @@ export const loginRestaurant = async (formData) => {
     }
 }
 
-export const getRestaurantProfile = async () => {
-    try{
-        const res = await axiosInstance.get("/restaurant/profile");
-        return res.data;
-    }
-    catch(err){
-        console.log("Error in getRestaurantProfile: ", err);
-        throw err;
-    }
-}
-
 export const restaurantLogout = async () => {
     try{
         const res = axiosInstance.post('/restaurant/logout', {}, { withCredentials: true });
@@ -95,6 +79,90 @@ export const restaurantLogout = async () => {
     }
     catch(err){
         console.log("Error in restaurantLogout: ", err);
+        throw err;
+    }
+}
+
+export const getRestaurantProfile = async () => {
+    try{
+        const res = await axiosInstance.get('/restaurant/profile');
+        return res.data;
+    }
+    catch(err){
+        throw err;
+    }
+}
+
+export const addMenuCategory = async (formData) => {
+    try{
+        const res = await axiosInstance.post('/restaurant/menu', formData);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in addMenuCategory: ", err);
+        throw err;
+    }
+}
+
+export const addFoodItem = async ({ formData }) => {
+    try{
+        const data = new FormData();
+        console.log(formData);
+
+        data.append("restaurantName", formData.restaurantName);
+        data.append("category_name", formData.category_name);        
+        data.append("name", formData.name);
+        data.append("description", formData.description);
+        data.append("price", formData.price);
+        data.append("discount_price", formData.discount_price);
+        data.append("isAvailable", formData.isAvailable);
+        data.append("preparationTime", formData.preparationTime);
+        data.append("isVeg", formData.isVeg);
+        data.append("tags", JSON.stringify(formData.tags));
+        data.append("variants", JSON.stringify(formData.variants));
+        formData.images.forEach((image) => data.append("images", image));
+
+        const res = await axiosInstance.post('/restaurant/food-item', data, { headers: { "Content-Type" : "multipart/form-data" } });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in addFoodItem: ", err);
+        throw err;
+    }
+}
+
+export const updateFoodItem = async ({ formData, foodItemId }) => {
+    try{
+        const data = new FormData();
+
+        data.append("restaurantName", formData.restaurantName);
+        data.append("category_name", formData.category_name);        
+        data.append("name", formData.name);
+        data.append("description", formData.description);
+        data.append("price", formData.price);
+        data.append("discount_price", formData.discount_price);
+        data.append("isAvailable", formData.isAvailable);
+        data.append("preparationTime", formData.preparationTime);
+        data.append("isVeg", formData.isVeg);
+        data.append("tags", JSON.stringify(formData.tags));
+        data.append("variants", JSON.stringify(formData.variants));
+
+        const res = await axiosInstance.put(`/restaurant/food-item/${foodItemId}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in updateFoodItem: ", err);
+        throw err;
+    }
+}
+
+export const deleteFoodItem = async (foodItemId) => {
+    try{
+        const res = await axiosInstance.delete(`/restaurant/food-item/${foodItemId}`);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in deleteFoodItem: ", err);
         throw err;
     }
 }

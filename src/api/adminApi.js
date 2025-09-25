@@ -39,7 +39,6 @@ export const getAdminProfile = async () => {
         return res.data;
     }
     catch(err){
-        console.log("Error in getAdminProfile: ", err);
         throw err;
     }
 }

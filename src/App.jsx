@@ -31,15 +31,8 @@ import AdminDashboardPage from "./pages/dashboards/AdminDashboardPage";
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
     const [authInitialized, setAuthInitialized] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setAuthInitialized(true);
-        }, 100);
-
-        return () => clearTimeout(timer);
-    }, []);
-
+    const [isLoading, setIsLoading] = useState(true);
+    
     const customerQuery = useQuery({
         queryKey: ["customerProfile"],
         queryFn: getCustomerProfile,
@@ -64,34 +57,41 @@ const App = () => {
         refetchOnWindowFocus: false
     });
 
-    useEffect(() => {
-        if (user) return; // user already set, no need to run
+    const fetchUserProfile = async () => {
+        if (user) return;
 
-        if (customerQuery.isSuccess && customerQuery.data) {
-            setUser(customerQuery.data, "Customer");
-        } else if (restaurantQuery.isSuccess && restaurantQuery.data) {
-            setUser(restaurantQuery.data, "Restaurant");
-        } else if (adminQuery.isSuccess && adminQuery.data) {
-            setUser(adminQuery.data, "Admin");
-        } else if (
-            customerQuery.isError &&
-            restaurantQuery.isError &&
-            adminQuery.isError
-        ) {
-            // Only call clearUser if it's not already null
+        try {
+            const [customerResult, restaurantResult, adminResult] = await Promise.allSettled([
+                customerQuery.refetch(),
+                restaurantQuery.refetch(),
+                adminQuery.refetch()
+            ]);
+
+            // Check results in order of preference
+            if (customerResult.status === 'fulfilled' && customerResult.value.isSuccess && customerResult.value.data) {
+                setUser(customerResult.value.data, "Customer");
+            } else if (restaurantResult.status === 'fulfilled' && restaurantResult.value.isSuccess && restaurantResult.value.data) {
+                setUser(restaurantResult.value.data, "Restaurant");
+            } else if (adminResult.status === 'fulfilled' && adminResult.value.isSuccess && adminResult.value.data) {
+                setUser(adminResult.value.data, "Admin");
+            } else {
+                clearUser();
+            }
+        } catch (error) {
+            console.error("Error fetching user profiles:", error);
             clearUser();
         }
-    }, [
-        user,
-        customerQuery.data, customerQuery.isSuccess, customerQuery.isError,
-        restaurantQuery.data, restaurantQuery.isSuccess, restaurantQuery.isError,
-        adminQuery.data, adminQuery.isSuccess, adminQuery.isError
-    ]);
+    };
 
-    if (!authInitialized || customerQuery.isLoading || customerQuery.isFetching ||
+    useEffect(() => {
+        fetchUserProfile();
+    }, []);
+
+    if (customerQuery.isLoading || customerQuery.isFetching ||
         restaurantQuery.isLoading || restaurantQuery.isFetching || adminQuery.isLoading || adminQuery.isFetching){
         return <PageLoader />;
     }
+
     console.log(user);
 
     return (
