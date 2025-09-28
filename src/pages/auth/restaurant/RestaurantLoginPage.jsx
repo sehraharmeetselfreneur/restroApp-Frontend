@@ -272,12 +272,12 @@ const RestaurantLoginPage = () => {
                 ></div>
 
                 {/* Content Overlay */}
-                <div className="relative z-10 p-8 xl:p-12 text-white flex flex-col justify-center gap-6 xl:gap-10 items-start">
+                <div className="relative z-10 p-8 xl:p-12 text-white flex flex-col justify-center gap-6 xl:gap-4 items-start">
                     <h1 className="text-3xl xl:text-4xl 2xl:text-5xl text-center w-full font-extrabold leading-tight tracking-wide drop-shadow-lg">
                         FlavorForge
                     </h1>
                     <div>
-                        <h2 className="text-3xl xl:text-4xl 2xl:text-5xl font-extrabold leading-tight tracking-wide drop-shadow-lg">
+                        <h2 className="text-2xl xl:text-3xl 2xl:text-4xl font-extrabold leading-tight tracking-wide drop-shadow-lg">
                             Grow Your Business with Us
                         </h2>
                         <p className="mt-4 text-base xl:text-lg 2xl:text-xl font-light leading-relaxed drop-shadow-md">

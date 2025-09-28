@@ -17,6 +17,10 @@ export const registerRestaurant = async ({ formData, documents }) => {
         data.append("address", JSON.stringify(formData.address));
         data.append("licenseNumber", JSON.stringify(formData.licenseNumber));
         data.append("cuisines", JSON.stringify(formData.cuisines));
+
+        if (formData.bannerImage) {
+            data.append("bannerImage", formData.bannerImage);
+        }
     
         // Images array (multiple files)
         formData.images.forEach((file) => {

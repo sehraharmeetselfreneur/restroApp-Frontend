@@ -104,9 +104,10 @@ const validateStep2 = (formData) => {
     else if (!/^\d{6}$/.test(formData.address.pincode)) errors.pincode = "Enter a valid 6-digit pincode";
     return errors;
 };
-const validateStep3 = (images) => {
+const validateStep3 = (images, formData) => {
     const errors = {};
     if (images.length === 0) errors.images = "At least one image is required";
+    if (!formData.bannerImage) errors.bannerImage = "Banner image is required";
     return errors;
 };
 const validateStep4 = (documents, formData) => {
@@ -210,12 +211,13 @@ const RestaurantSignupPage = () => {
                         city: "",
                         state: "",
                         pincode: "",
-                        geoLocation: { lat: null, lng: null },
+                        geoLocation: { coordinates: [null, null] },
                     },
                     licenseNumber: { fssai: "", gst: "" },
                     openingTime: "",
                     closingTime: "",
                     images: [],
+                    bannerImage: null,
                     documents: { fssaiLicense: null, gstCertificate: null, panCard: null },
                     bankDetails: {
                         accountHolderName: "",
@@ -236,6 +238,8 @@ const RestaurantSignupPage = () => {
     });
     const fileInputRef = useRef(null);
     const documentInputRefs = useRef({ fssai: null, gst: null, pan: null });
+    const [bannerImage, setBannerImage] = useState(null);
+    const bannerInputRef = useRef(null);
 
     //UseEffects for saving data in localStorage
     useEffect(() => {
@@ -268,7 +272,7 @@ const RestaurantSignupPage = () => {
         switch(currentStep) {
             case 1: return validateStep1(formData);
             case 2: return validateStep2(formData.address);
-            case 3: return validateStep3(formData.images);
+            case 3: return validateStep3(formData.images, formData);
             case 4: return validateStep4(documents, formData);
             case 5: return validateStep5(formData);
             case 6: return validateStep6(formData.bankDetails);
@@ -281,8 +285,8 @@ const RestaurantSignupPage = () => {
         let errors = {};
         if(currentStep === 1) errors = validateStep1(formData);
         if(currentStep === 2) errors = validateStep2(formData);
-        if(currentStep === 3) errors = validateStep3(formData.images);
-        if(currentStep === 4) errors = validateStep4(documents, formData);
+        if(currentStep === 3) errors = validateStep3(formData.images, formData);
+        // if(currentStep === 4) errors = validateStep4(documents, formData);
         if(currentStep === 5) errors = validateStep5(formData);
         if(currentStep === 6) errors = validateStep6(formData.bankDetails);
 
@@ -403,6 +407,41 @@ const RestaurantSignupPage = () => {
         }));
     };
 
+    const handleBannerImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Please upload only JPEG or PNG images.');
+            return;
+        }
+
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            toast.error('File size should be less than 5MB.');
+            return;
+        }
+
+        setBannerImage(file); // optional, for preview
+        setFormData(prev => ({ ...prev, bannerImage: file }));
+    };
+
+    const triggerBannerUpload = () => {
+        if (bannerInputRef.current) {
+            bannerInputRef.current.click();
+        }
+    };
+
+    const removeBannerImage = () => {
+        setBannerImage(null);
+        setFormData(prev => ({ ...prev, bannerImage: null }));
+
+        if (bannerInputRef.current) {
+            bannerInputRef.current.value = '';
+        }
+    };
+
     const getMyLocation = () => {
         setLocationLoading(true);
         
@@ -422,8 +461,8 @@ const RestaurantSignupPage = () => {
                     address: {
                         ...prev.address,
                         geoLocation: {
-                            lat: latitude,
-                            lng: longitude
+                            type: "Point",
+                            coordinates: [longitude, latitude]
                         }
                     }
                 }));
@@ -475,10 +514,10 @@ const RestaurantSignupPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-2 md:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-300 via-white to-slate-800 p-2 md:p-8 lg:p-4">
             <div className="max-w-full flex flex-col lg:flex-row gap-5">
                 {/* Main Content */}
-                <div className="flex flex-col lg:flex-row gap-5 flex-1">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-5 flex-1">
                     {/* Left Sidebar - Vertical Steps (Hidden on mobile) */}
                     <div className="hidden lg:block">
                         <VerticalStepNavigation 
@@ -727,7 +766,7 @@ const RestaurantSignupPage = () => {
                                                     )}
                                                 </button>
                                                 {/* Location Display Component */}
-                                                {formData.address.geoLocation && formData.address.geoLocation.lat && formData.address.geoLocation.lng && (
+                                                {formData.address.geoLocation && formData.address.geoLocation.coordinates?.[1] && formData.address.geoLocation.coordinates?.[0] && (
                                                     <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-2">
                                                         <div className="flex items-center mb-2 gap-2">
                                                             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -737,13 +776,13 @@ const RestaurantSignupPage = () => {
                                                             <div className="bg-white flex items-center justify-between rounded-lg p-3 border border-green-100">
                                                                 <span className="text-green-600 font-medium block mb-1">Latitude</span>
                                                                 <span className="text-gray-800 font-bold font-mono text-xs">
-                                                                    {formData.address.geoLocation.lat.toFixed(6)}°
+                                                                    {formData.address.geoLocation.coordinates[1].toFixed(6)}°
                                                                 </span>
                                                             </div>
                                                             <div className="bg-white flex items-center justify-between rounded-lg p-3 border border-green-100">
                                                                 <span className="text-green-600 font-medium block mb-1">Longitude</span>
                                                                 <span className="text-gray-800 font-bold font-mono text-xs">
-                                                                    {formData.address.geoLocation.lng.toFixed(6)}°
+                                                                    {formData.address.geoLocation.coordinates[0].toFixed(6)}°
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -762,26 +801,68 @@ const RestaurantSignupPage = () => {
 
                                 {currentStep === 3 && (
                                     <div className="space-y-8">
+                                        {/* Step Header */}
                                         <div className="border-b border-slate-200 pb-6">
                                             <h2 className="text-3xl font-bold text-slate-800 mb-2">Restaurant Gallery</h2>
                                             <p className="text-slate-600">Upload high-quality images to attract customers</p>
                                         </div>
 
                                         <div className="space-y-6">
+                                            {/* Banner Image Upload */}
                                             <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:border-orange-400 hover:bg-orange-50 transition-all duration-300 group cursor-pointer"
-                                             onClick={() => fileInputRef.current?.click()}>
-                                            <FaCamera className="mx-auto text-4xl text-slate-400 group-hover:text-orange-500 transition-colors duration-300 mb-4" />
-                                            <h4 className="font-semibold text-slate-700 group-hover:text-orange-600 transition-colors duration-300 mb-2">
-                                                Upload Restaurant Images
-                                            </h4>
-                                            <p className="text-sm text-slate-500 mb-4">
-                                                Click to browse or drag and drop images here
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                Supported formats: JPG, PNG, WebP (Max 5MB each)
-                                            </p>
+                                                onClick={triggerBannerUpload}>
+                                                <FaCamera className="mx-auto text-4xl text-slate-400 group-hover:text-orange-500 transition-colors duration-300 mb-4" />
+                                                <h4 className="font-semibold text-slate-700 group-hover:text-orange-600 transition-colors duration-300 mb-2">
+                                                    Upload Banner Image
+                                                </h4>
+                                                <p className="text-sm text-slate-500 mb-4">
+                                                    Click to browse or drag and drop your restaurant banner
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Supported formats: JPG, PNG (Max 5MB)
+                                                </p>
                                             </div>
 
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                ref={bannerInputRef}
+                                                onChange={handleBannerImageUpload}
+                                                className="hidden"
+                                            />
+
+                                            {bannerImage && (
+                                                <div className="relative w-full md:w-1/2 lg:w-1/3">
+                                                    <img
+                                                        src={URL.createObjectURL(bannerImage)}
+                                                        alt="Banner Preview"
+                                                        className="w-full h-40 object-cover rounded-xl shadow-md"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={removeBannerImage}
+                                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
+                                                    >
+                                                        <FaTimes className="text-xs" />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Restaurant Images Upload */}
+                                            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:border-orange-400 hover:bg-orange-50 transition-all duration-300 group cursor-pointer"
+                                                onClick={() => fileInputRef.current?.click()}>
+                                                <FaCamera className="mx-auto text-4xl text-slate-400 group-hover:text-orange-500 transition-colors duration-300 mb-4" />
+                                                <h4 className="font-semibold text-slate-700 group-hover:text-orange-600 transition-colors duration-300 mb-2">
+                                                    Upload Restaurant Images
+                                                </h4>
+                                                <p className="text-sm text-slate-500 mb-4">
+                                                    Click to browse or drag and drop images here
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Supported formats: JPG, PNG, WebP (Max 5MB each)
+                                                </p>
+                                            </div>
+                                        
                                             <input
                                                 ref={fileInputRef}
                                                 type="file"
@@ -793,15 +874,12 @@ const RestaurantSignupPage = () => {
 
                                             {formData.images.length > 0 && (
                                                 <div>
-                                                    <h4 className="font-semibold text-slate-700 mb-4">Uploaded Images ({formData.images.length})</h4>
+                                                    <h4 className="font-semibold text-slate-700 mb-4">
+                                                        Uploaded Images ({formData.images.length})
+                                                    </h4>
                                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                                         {formData.images.map((image, index) => {
-                                                            let imageUrl = "";
-                                                            if (image instanceof File) {
-                                                                imageUrl = URL.createObjectURL(image);
-                                                            } else {
-                                                                imageUrl = image; // maybe a URL or base64
-                                                            }
+                                                            const imageUrl = image instanceof File ? URL.createObjectURL(image) : image;
                                                             return (
                                                                 <div key={index} className="relative group">
                                                                     <img
@@ -812,7 +890,7 @@ const RestaurantSignupPage = () => {
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => removeImage(index)}
-                                                                        className="absolute cursor-pointer top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
+                                                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
                                                                     >
                                                                         <FaTimes className="text-xs" />
                                                                     </button>
@@ -823,9 +901,10 @@ const RestaurantSignupPage = () => {
                                                 </div>
                                             )}
 
+                                            {/* Photo Tips */}
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                                                 <h4 className="font-semibold text-green-800 mb-2">📸 Photo Tips</h4>
-                                                <ul className="text-green-700 text-sm grid grid-cols-1">
+                                                <ul className="text-green-700 text-sm grid grid-cols-1 gap-1">
                                                     <li>• Use natural lighting for food photos</li>
                                                     <li>• Show your restaurant's atmosphere and ambiance</li>
                                                     <li>• Include photos of popular dishes</li>
@@ -1151,7 +1230,7 @@ const RestaurantSignupPage = () => {
 
                 {/* Right Part (Hidden on mobile) */}
                 <div className="hidden lg:block lg:w-fit">
-                    <div className="sticky top-20">
+                    <div className="sticky top-10">
                         {/* Website Name */}
                         <h1 className="text-6xl font-extrabold text-orange-500 mb-2 drop-shadow-md tracking-tight md:tracking-wide">
                             FlavorForge

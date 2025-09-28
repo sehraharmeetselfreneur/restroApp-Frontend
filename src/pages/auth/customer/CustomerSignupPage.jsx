@@ -6,11 +6,13 @@ import { IoRestaurantOutline, IoGiftOutline } from 'react-icons/io5';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { registerCustomer } from '../../../api/customerApi';
+import { getCustomerProfile, registerCustomer } from '../../../api/customerApi';
 import validator from 'validator';
+import useAuthStore from '../../../store/useAuthStore';
 
 const CustomerSignupPage = () => {
     const queryClient = useQueryClient();
+    const{ setUser } = useAuthStore();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState(() => {
@@ -31,7 +33,7 @@ const CustomerSignupPage = () => {
                     state: "",
                     pincode: "",
                     landmark: "",
-                    tag: "",
+                    tag: "" || "Home",
                     geoLocation: { lat: null, lng: null },
                 },
                 profileImage: null
@@ -39,7 +41,7 @@ const CustomerSignupPage = () => {
     });
     const [profileImage, setProfileImage] = useState(null);
     const [currentStep, setCurrentStep] = useState(() => {
-        const savedStep = localStorage.getItem("restaurantCurrentStep");
+        const savedStep = localStorage.getItem("restaurantSignupCurrentStep");
         return savedStep ? Number(savedStep) : 1;
     });
 
@@ -47,7 +49,7 @@ const CustomerSignupPage = () => {
         localStorage.setItem("customerSignupForm", JSON.stringify(formData));
     }, [formData]);
     useEffect(() => {
-        localStorage.setItem("customerCurrentStep", currentStep);
+        localStorage.setItem("customerSignupCurrentStep", currentStep);
     }, [currentStep]);
 
     const [showPassword, setShowPassword] = useState(false);
@@ -58,10 +60,11 @@ const CustomerSignupPage = () => {
 
     const registerCustomerMutation = useMutation({
         mutationFn: registerCustomer,
-        onSuccess: () => {
-            toast.success("Registration successful!");
+        onSuccess: async (data) => {
+            toast.success(data.message);
             localStorage.removeItem("customerSignupForm");
             localStorage.removeItem("customerCurrentStep");
+            setUser(await getCustomerProfile());
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
             navigate("/");
         },

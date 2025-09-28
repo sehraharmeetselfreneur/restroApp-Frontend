@@ -4,10 +4,12 @@ import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import validator from 'validator';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { loginCustomer } from '../../../api/customerApi';
+import { getCustomerProfile, loginCustomer } from '../../../api/customerApi';
+import useAuthStore from '../../../store/useAuthStore';
 
 const CustomerLoginPage = () => {
     const queryClient = useQueryClient();
+    const { setUser } = useAuthStore();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState(() => {
@@ -26,10 +28,11 @@ const CustomerLoginPage = () => {
 
     const loginCustomerMutation = useMutation({
         mutationFn: loginCustomer,
-        onSuccess: () => {
+        onSuccess: async (data) => {
             localStorage.removeItem("customerLoginForm");
+            setUser(await getCustomerProfile(), "Customer");
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
-            toast.success('Login successful! Redirecting...');
+            toast.success(data.message);
             navigate("/");
         },
         onError: (err) => {

@@ -14,8 +14,8 @@ const VerticalStepNavigation = ({ currentStep, steps, onStepClick, validateCurre
     };
 
     return(
-        <div className="w-80 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 py-11 rounded-2xl shadow-2xl sticky top-8 h-fit">
-            <div className="mb-8">
+        <div className="w-80 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 py-6 rounded-2xl shadow-2xl sticky top-8 h-fit">
+            <div className="mb-4">
                 <h2 className="text-2xl font-bold text-white mb-2">Partner Registration</h2>
                 <p className="text-slate-400 text-sm">Complete all steps to join our platform</p>
             </div>

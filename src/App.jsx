@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 //Zustand store
@@ -27,11 +27,14 @@ import CustomerLoginPage from "./pages/auth/customer/CustomerLoginPage";
 import AdminSignupPage from "./pages/auth/admin/AdminSignupPage";
 import AdminLoginPage from "./pages/auth/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/dashboards/AdminDashboardPage";
+import CustomerProfilePage from "./pages/profile/CustomerProfilePage";
+import RestaurantsPage from "./pages/RestaurantsPage";
+import RestaurantMenuPage from "./pages/RestaurantMenuPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
+    const location = useLocation();
     const [authInitialized, setAuthInitialized] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
     
     const customerQuery = useQuery({
         queryKey: ["customerProfile"],
@@ -84,6 +87,10 @@ const App = () => {
     };
 
     useEffect(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [location.pathname]);
+
+    useEffect(() => {
         fetchUserProfile();
     }, []);
 
@@ -93,6 +100,7 @@ const App = () => {
     }
 
     console.log(user);
+    console.log(role);
 
     return (
         <div>
@@ -107,9 +115,12 @@ const App = () => {
                 <Route path="/customer/login" element={!user ? <CustomerLoginPage /> : <Navigate to={"/"} />} />
 
                 <Route path="/" element={<HomePage />} />
+                <Route path="/restaurants" element={<RestaurantsPage />} />
+                <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
+                <Route path="/profile" element={user === null ? <Navigate to={"/"} /> : role === "Customer" ? <CustomerProfilePage /> : role === "Restaurant" ? <RestaurantDashboardPage /> : role === "Admin" ? <AdminDashboardPage /> : <Navigate to={"/"} />} />
 
                 <Route path="/restaurant/dashboard" element={(user && role === "Restaurant") ? <RestaurantDashboardPage /> : <Navigate to={"/restaurant/login"} />} />
-                <Route path="/admin" element={user === null ? <PageLoader /> : role === "Admin" ? <AdminDashboardPage /> : <Navigate to="/" />} />
+                <Route path="/admin" element={user === null ? <AdminLoginPage /> : role === "Admin" ? <AdminDashboardPage /> : <AdminLoginPage />} />
             </Routes>
         </div>
     )

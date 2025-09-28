@@ -42,3 +42,14 @@ export const getCustomerProfile = async () => {
         throw err;
     }
 }
+
+export const logoutCustomer = async () => {
+    try{
+        const res = await axiosInstance.post('/customer/logout');
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in logoutCustomer: ", err);
+        throw err;
+    }
+}
