@@ -30,6 +30,7 @@ import AdminDashboardPage from "./pages/dashboards/AdminDashboardPage";
 import CustomerProfilePage from "./pages/profile/CustomerProfilePage";
 import RestaurantsPage from "./pages/RestaurantsPage";
 import RestaurantMenuPage from "./pages/RestaurantMenuPage";
+import CartPage from "./pages/CartPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -114,10 +115,11 @@ const App = () => {
                 <Route path="/customer/signup" element={!user ? <CustomerSignupPage /> : <Navigate to={"/"} />} />
                 <Route path="/customer/login" element={!user ? <CustomerLoginPage /> : <Navigate to={"/"} />} />
 
-                <Route path="/" element={<HomePage />} />
-                <Route path="/restaurants" element={<RestaurantsPage />} />
-                <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
+                <Route path="/" element={!user ? <HomePage /> : role === "Customer" || role === "Admin" || role === "SuperAdmin" ? <HomePage /> : role === "Restaurant" ? <Navigate to="/restaurant/dashboard" /> : <Navigate to="/" />} />
                 <Route path="/profile" element={user === null ? <Navigate to={"/"} /> : role === "Customer" ? <CustomerProfilePage /> : role === "Restaurant" ? <RestaurantDashboardPage /> : role === "Admin" ? <AdminDashboardPage /> : <Navigate to={"/"} />} />
+                <Route path="/cart" element={!user ? <CustomerLoginPage /> : role === "Customer" ||  role === "Admin" || role === "SuperAdmin" ? <CartPage /> : <Navigate to={"/customer/login"} />} />
+                <Route path="/restaurants" element={!user ? <RestaurantsPage /> : role === "Customer" || role === "Admin" || role === "SuperAdmin" ? <RestaurantsPage /> : role === "Restaurant" ? <Navigate to="/restaurant/dashboard" /> : <Navigate to="/" />} />
+                <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
 
                 <Route path="/restaurant/dashboard" element={(user && role === "Restaurant") ? <RestaurantDashboardPage /> : <Navigate to={"/restaurant/login"} />} />
                 <Route path="/admin" element={user === null ? <AdminLoginPage /> : role === "Admin" ? <AdminDashboardPage /> : <AdminLoginPage />} />

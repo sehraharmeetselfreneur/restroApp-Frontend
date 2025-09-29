@@ -1,9 +1,13 @@
 import { BarChart3, DollarSign, Package, Star, Users } from "lucide-react";
+import VerificationBanner from "./VerificationBanner";
+import useAuthStore from "../../../store/useAuthStore";
 
 const Analytics = ({ dashboardStats, trendingItems }) => {
+    const { user } = useAuthStore();
 
     return (
         <div className="space-y-6">
+            {user.profile.isVerified ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="p-3 bg-purple-100 rounded-xl">
@@ -96,6 +100,9 @@ const Analytics = ({ dashboardStats, trendingItems }) => {
                     </div>
                 </div>
             </div>
+            ) : (
+                <VerificationBanner />
+            )}
         </div>
     );
 };

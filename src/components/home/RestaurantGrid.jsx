@@ -285,7 +285,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
-                Top restaurant chains in {user ? user.profile.address[0].city : location}
+                Top restaurant chains in {user ? user.profile.address[0]?.city : location}
               </h2>
               <p className="text-lg lg:text-xl text-gray-600">
                 {nearByRestaurants.restaurantCount || 0} restaurants • Best food near you
@@ -540,10 +540,10 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
           {/* Load More */}
           {nearByRestaurants?.restaurants?.length > 0 && (
             <div className="text-center mt-12">
-              <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group">
+              <Link to={"/restaurants"} className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group">
                 View All Restaurants 
                 <ArrowRight className="inline ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </button>
+              </Link>
             </div>
           )}
         </section>

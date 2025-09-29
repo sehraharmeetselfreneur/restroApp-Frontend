@@ -34,22 +34,49 @@ import {
   Soup,
   Salad
 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/home/Navbar';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getParticularRestaurant } from '../api/homeApi';
 import useAuthStore from '../store/useAuthStore';
+import { addToCartApi, removeFromCartApi } from '../api/cartApi';
+import { getCustomerProfile } from '../api/customerApi';
+import CartButton from '../components/home/CartButton';
 
 const RestaurantMenuPage = () => {
     const { id } = useParams();
-    const { user } = useAuthStore();
+    const queryClient = useQueryClient();
+    const { user, setUser } = useAuthStore();
+    const navigate = useNavigate();
     const [restaurants, setRestaurant] = useState({});
 
     const getRestaurantMutation = useMutation({
         mutationFn: getParticularRestaurant,
         onSuccess: (data) => {
             setRestaurant(data.data);
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
+    const addToCartMutation = useMutation({
+        mutationFn: addToCartApi,
+        onSuccess: async (data) => {
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+            toast.success(data.message);
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
+    const removeFromCartMutation = useMutation({
+        mutationFn: removeFromCartApi,
+        onSuccess: async (data) => {
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+            toast.success(data.message);
         },
         onError: (error) => {
             toast.error(error.response.data?.message || "Something went wrong");
@@ -65,7 +92,11 @@ const RestaurantMenuPage = () => {
         spicy: false,
         bestseller: false
     });
-    const [cart, setCart] = useState({});
+    const [cart, setCart] = useState({
+        itemId: '',
+        variantId: '',
+        quantity: 1
+    });
     const [showFilters, setShowFilters] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -115,182 +146,6 @@ const RestaurantMenuPage = () => {
     offers: ['50% OFF up to ₹100', 'Free Delivery above ₹299', 'Buy 2 Get 1 Free on Desserts']
     };
 
-    // Mock menu data based on your models
-    // const menuCategories = [
-    // {
-    //   _id: 'cat1',
-    //   name: 'Starters',
-    //   description: 'Delicious appetizers to kick off your meal',
-    //   items: [
-    //     {
-    //       _id: 'item1',
-    //       name: 'Chicken Tikka',
-    //       description: 'Tender pieces of chicken marinated in yogurt and spices, grilled to perfection in tandoor',
-    //       images: ['https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=300&h=200&fit=crop'],
-    //       price: 299,
-    //       discount_price: 249,
-    //       isAvailable: true,
-    //       preparationTime: 20,
-    //       isVeg: false,
-    //       tags: ['spicy', 'bestseller', 'protein'],
-    //       variants: [
-    //         { name: 'Half', price: 249, quantity: '6 pieces', calories: 280, isAvailable: true },
-    //         { name: 'Full', price: 399, quantity: '12 pieces', calories: 560, isAvailable: true }
-    //       ]
-    //     },
-    //     {
-    //       _id: 'item2',
-    //       name: 'Paneer Tikka',
-    //       description: 'Cubes of fresh paneer marinated in spices and grilled with bell peppers and onions',
-    //       images: ['https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=300&h=200&fit=crop'],
-    //       price: 269,
-    //       discount_price: null,
-    //       isAvailable: true,
-    //       preparationTime: 18,
-    //       isVeg: true,
-    //       tags: ['vegetarian', 'popular', 'healthy'],
-    //       variants: [
-    //         { name: 'Half', price: 199, quantity: '6 pieces', calories: 250, isAvailable: true },
-    //         { name: 'Full', price: 269, quantity: '10 pieces', calories: 400, isAvailable: true }
-    //       ]
-    //     },
-    //     {
-    //       _id: 'item3',
-    //       name: 'Seekh Kebab',
-    //       description: 'Minced mutton mixed with aromatic spices, shaped on skewers and grilled',
-    //       images: ['https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=300&h=200&fit=crop'],
-    //       price: 349,
-    //       discount_price: 299,
-    //       isAvailable: true,
-    //       preparationTime: 25,
-    //       isVeg: false,
-    //       tags: ['spicy', 'mutton', 'bestseller'],
-    //       variants: [
-    //         { name: 'Regular', price: 299, quantity: '4 pieces', calories: 320, isAvailable: true },
-    //         { name: 'Large', price: 449, quantity: '8 pieces', calories: 640, isAvailable: true }
-    //       ]
-    //     }
-    //   ]
-    // },
-    // {
-    //   _id: 'cat2',
-    //   name: 'Main Course',
-    //   description: 'Traditional main dishes that define our cuisine',
-    //   items: [
-    //     {
-    //       _id: 'item4',
-    //       name: 'Butter Chicken',
-    //       description: 'Tender chicken pieces in rich, creamy tomato-based sauce with aromatic spices',
-    //       images: ['https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=300&h=200&fit=crop'],
-    //       price: 399,
-    //       discount_price: null,
-    //       isAvailable: true,
-    //       preparationTime: 30,
-    //       isVeg: false,
-    //       tags: ['creamy', 'bestseller', 'popular'],
-    //       variants: [
-    //         { name: 'Regular', price: 399, quantity: '400ml', calories: 450, isAvailable: true },
-    //         { name: 'Large', price: 549, quantity: '600ml', calories: 675, isAvailable: true }
-    //       ]
-    //     },
-    //     {
-    //       _id: 'item5',
-    //       name: 'Dal Makhani',
-    //       description: 'Creamy black lentils slow-cooked overnight with butter and cream, a true delicacy',
-    //       images: ['https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300&h=200&fit=crop'],
-    //       price: 249,
-    //       discount_price: 199,
-    //       isAvailable: true,
-    //       preparationTime: 25,
-    //       isVeg: true,
-    //       tags: ['creamy', 'vegetarian', 'comfort food'],
-    //       variants: [
-    //         { name: 'Regular', price: 199, quantity: '300ml', calories: 280, isAvailable: true },
-    //         { name: 'Large', price: 299, quantity: '500ml', calories: 460, isAvailable: true }
-    //       ]
-    //     },
-    //     {
-    //       _id: 'item6',
-    //       name: 'Hyderabadi Biryani',
-    //       description: 'Fragrant basmati rice layered with marinated mutton, cooked in traditional dum style',
-    //       images: ['https://images.unsplash.com/photo-1563379091339-03246963d51d?w=300&h=200&fit=crop'],
-    //       price: 499,
-    //       discount_price: 449,
-    //       isAvailable: true,
-    //       preparationTime: 45,
-    //       isVeg: false,
-    //       tags: ['spicy', 'bestseller', 'biryani', 'aromatic'],
-    //       variants: [
-    //         { name: 'Regular', price: 449, quantity: '1 portion', calories: 650, isAvailable: true },
-    //         { name: 'Large', price: 649, quantity: '1.5 portions', calories: 975, isAvailable: true }
-    //       ]
-    //     }
-    //   ]
-    // },
-    // {
-    //   _id: 'cat3',
-    //   name: 'Desserts',
-    //   description: 'Sweet endings to your perfect meal',
-    //   items: [
-    //     {
-    //       _id: 'item7',
-    //       name: 'Gulab Jamun',
-    //       description: 'Soft milk dumplings in aromatic sugar syrup, served warm',
-    //       images: ['https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=300&h=200&fit=crop'],
-    //       price: 129,
-    //       discount_price: 99,
-    //       isAvailable: true,
-    //       preparationTime: 10,
-    //       isVeg: true,
-    //       tags: ['sweet', 'traditional', 'popular'],
-    //       variants: [
-    //         { name: '2 pieces', price: 99, quantity: '2 pieces', calories: 180, isAvailable: true },
-    //         { name: '4 pieces', price: 179, quantity: '4 pieces', calories: 360, isAvailable: true }
-    //       ]
-    //     },
-    //     {
-    //       _id: 'item8',
-    //       name: 'Kulfi',
-    //       description: 'Traditional Indian ice cream with cardamom, pistachios and saffron',
-    //       images: ['https://images.unsplash.com/photo-1488900128323-21503983a07e?w=300&h=200&fit=crop'],
-    //       price: 89,
-    //       discount_price: null,
-    //       isAvailable: true,
-    //       preparationTime: 5,
-    //       isVeg: true,
-    //       tags: ['cold', 'creamy', 'refreshing'],
-    //       variants: [
-    //         { name: 'Single', price: 89, quantity: '1 piece', calories: 120, isAvailable: true },
-    //         { name: 'Double', price: 159, quantity: '2 pieces', calories: 240, isAvailable: true }
-    //       ]
-    //     }
-    //   ]
-    // },
-    // {
-    //   _id: 'cat4',
-    //   name: 'Beverages',
-    //   description: 'Refreshing drinks to complement your meal',
-    //   items: [
-    //     {
-    //       _id: 'item9',
-    //       name: 'Mango Lassi',
-    //       description: 'Creamy yogurt drink blended with fresh mango pulp and cardamom',
-    //       images: ['https://images.unsplash.com/photo-1577805947697-89e18249d767?w=300&h=200&fit=crop'],
-    //       price: 149,
-    //       discount_price: 129,
-    //       isAvailable: true,
-    //       preparationTime: 8,
-    //       isVeg: true,
-    //       tags: ['refreshing', 'creamy', 'popular'],
-    //       variants: [
-    //         { name: 'Regular', price: 129, quantity: '300ml', calories: 180, isAvailable: true },
-    //         { name: 'Large', price: 179, quantity: '500ml', calories: 300, isAvailable: true }
-    //       ]
-    //     }
-    //   ]
-    // }
-    // ];
-
     // Category icons mapping
     const getCategoryIcon = (categoryName) => {
         const iconMap = {
@@ -308,41 +163,50 @@ const RestaurantMenuPage = () => {
         return iconMap[categoryName] || ChefHat;
     };
 
-    const addToCart = (itemId, variant = null) => {
-        setCart(prev => {
-            const key = variant ? `${itemId}-${variant.name}` : itemId;
-            return {
-                ...prev,
-                [key]: {
-                    ...prev[key],
-                    quantity: (prev[key]?.quantity || 0) + 1,
-                    itemId,
-                    variant
-                }
-            };
-        });
-    };
-
-    const removeFromCart = (itemId, variant = null) => {
-        setCart(prev => {
-            const key = variant ? `${itemId}-${variant.name}` : itemId;
-            const newCart = { ...prev };
-            if (newCart[key] && newCart[key].quantity > 1) {
-                newCart[key].quantity -= 1;
-            } else {
-                delete newCart[key];
+    const addToCart = (itemId, variantId = null) => {
+        if(user){
+            const payload = {
+                itemId,
+                variantId,
+                quantity: 1
             }
-            return newCart;
-        });
+            console.log(payload);
+            addToCartMutation.mutate(payload);
+        }
+        else{
+            navigate("/customer/login");
+        }
     };
 
-    const getCartQuantity = (itemId, variant = null) => {
-        const key = variant ? `${itemId}-${variant.name}` : itemId;
-        return cart[key]?.quantity || 0;
+    const removeFromCart = (itemId, variantId = null) => {
+        removeFromCartMutation.mutate(itemId, variantId);
+    };
+
+    const getCartQuantity = (itemId, variantId = null) => {
+        if (!user?.cart?.items) return 0;
+
+        return user.cart.items
+            .filter((cartItem) => {
+                const sameFood = cartItem.foodItemId._id.toString() === itemId;
+
+                let sameVariant = false;
+                if (!variantId && !cartItem.variantId) {
+                    // Both have no variant
+                    sameVariant = true;
+                } else if (variantId && cartItem.variantId) {
+                    // Both have variants
+                    sameVariant =
+                        cartItem.variantId.toString() ===
+                        (typeof variantId === "string" ? variantId : variantId._id.toString());
+                }
+
+                return sameFood && sameVariant;
+            })
+            .reduce((total, item) => total + item.quantity, 0);
     };
 
     const getTotalCartItems = () => {
-        return Object.values(cart).reduce((total, item) => total + item.quantity, 0);
+        return user?.profile?.cart?.items?.length || 0;
     };
 
     const scrollToCategory = (categoryId) => {
@@ -375,10 +239,6 @@ const RestaurantMenuPage = () => {
     useEffect(() => {
         getRestaurantMutation.mutate({ id, user });
     }, []);
-
-    useEffect(() => {
-        console.log(restaurants);
-    }, [restaurants])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -700,17 +560,17 @@ const RestaurantMenuPage = () => {
                                             <div className="mt-3">
                                               {getCartQuantity(item._id, variant) === 0 ? (
                                                 <button 
-                                                  onClick={() => addToCart(item._id, variant)}
+                                                  onClick={() => addToCart(item?._id, variant?._id)}
                                                   disabled={!item.isAvailable || !variant.isAvailable}
-                                                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed group-hover/variant:scale-105"
+                                                  className="w-full cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed group-hover/variant:scale-105"
                                                 >
                                                   Add to Cart
                                                 </button>
                                               ) : (
                                                 <div className="flex items-center justify-center space-x-3">
                                                   <button 
-                                                    onClick={() => removeFromCart(item._id, variant)}
-                                                    className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
+                                                    onClick={() => removeFromCart(item._id, variant._id)}
+                                                    className="w-8 h-8 cursor-pointer bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
                                                   >
                                                     <Minus className="h-4 w-4" />
                                                   </button>
@@ -718,8 +578,8 @@ const RestaurantMenuPage = () => {
                                                     {getCartQuantity(item._id, variant)}
                                                   </span>
                                                   <button 
-                                                    onClick={() => addToCart(item._id, variant)}
-                                                    className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
+                                                    onClick={() => addToCart(item._id, variant._id)}
+                                                    className="w-8 h-8 cursor-pointer bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
                                                   >
                                                     <Plus className="h-4 w-4" />
                                                   </button>
@@ -739,16 +599,16 @@ const RestaurantMenuPage = () => {
                                         <button 
                                           onClick={() => addToCart(item._id)}
                                           disabled={!item.isAvailable}
-                                          className="bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                          className="bg-gradient-to-r cursor-pointer from-orange-500 to-red-500 text-white py-3 px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                                         >
                                           <ShoppingCart className="h-4 w-4" />
                                           <span>Add to Cart</span>
                                         </button>
                                       ) : (
-                                        <div className="flex items-center space-x-4">
+                                        <div className="flex items-center space-x-2">
                                           <button 
                                             onClick={() => removeFromCart(item._id)}
-                                            className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
+                                            className="w-10 h-10 cursor-pointer bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
                                           >
                                             <Minus className="h-5 w-5" />
                                           </button>
@@ -757,7 +617,7 @@ const RestaurantMenuPage = () => {
                                           </span>
                                           <button 
                                             onClick={() => addToCart(item._id)}
-                                            className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
+                                            className="w-10 h-10 cursor-pointer bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors duration-300"
                                           >
                                             <Plus className="h-5 w-5" />
                                           </button>
@@ -832,21 +692,12 @@ const RestaurantMenuPage = () => {
       </div>
 
       {/* Floating Cart Button */}
-      {getTotalCartItems() > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white w-16 h-16 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center relative">
-            <ShoppingCart className="h-8 w-8" />
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold animate-pulse">
-              {getTotalCartItems()}
-            </span>
-          </button>
-        </div>
-      )}
+      <CartButton />
 
       {/* Item Details Modal */}
       {showItemModal && selectedItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl no-scrollbar max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="relative">
               {/* Modal Header with Image */}
               <div className="relative h-72 overflow-hidden rounded-t-3xl">
@@ -1022,29 +873,6 @@ const RestaurantMenuPage = () => {
           </div>
         </div>
       )}
-
-      {/* Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes slide {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-        .animate-slide {
-          animation: slide 20s linear infinite;
-        }
-        .line-clamp-1 {
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-        }
-        .line-clamp-2 {
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        }
-      `}</style>
     </div>
   );
 };

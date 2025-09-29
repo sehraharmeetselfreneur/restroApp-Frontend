@@ -338,6 +338,9 @@ const AdminDashboardPage = () => {
                 {item.id === "orders" && (
                   <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">73</span>
                 )}
+                {item.id === "verification" && (
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unverifiedRestaurants.length}</span>
+                )}
               </button>
             );
           })}
@@ -1056,7 +1059,7 @@ const AdminDashboardPage = () => {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-600 mb-2">Category</label>
-                            <p className="text-gray-900">{selectedRestaurant.cuisines[0]}</p>
+                            <p className="text-gray-900">{selectedRestaurant.cuisines[0]} +{selectedRestaurant.cuisines.length - 1} more</p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-600 mb-2">Owner Name</label>
@@ -1072,7 +1075,7 @@ const AdminDashboardPage = () => {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-600 mb-2">Geo-Location</label>
-                            <p className="text-gray-900">{selectedRestaurant.address.geoLocation.lat.toFixed(6)}, {selectedRestaurant.address.geoLocation.lng.toFixed(6)}</p>
+                            <p className="text-gray-900">{selectedRestaurant.address.geoLocation.coordinates[1].toFixed(6)}, {selectedRestaurant.address.geoLocation.coordinates[0].toFixed(6)}</p>
                           </div>
                           <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-600 mb-2">Address</label>

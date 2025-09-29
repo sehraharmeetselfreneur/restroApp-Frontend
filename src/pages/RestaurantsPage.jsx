@@ -37,6 +37,7 @@ import useAuthStore from '../store/useAuthStore';
 import { useMutation } from '@tanstack/react-query';
 import { getNearByRestaurants } from '../api/homeApi';
 import { useNavigate } from 'react-router-dom';
+import CartButton from '../components/home/CartButton';
 
 const RestaurantsPage = () => {
   const { user } = useAuthStore();
@@ -599,7 +600,7 @@ const RestaurantsPage = () => {
               Discover Amazing Restaurants
             </h1>
             <p className="text-xl text-white/90 max-w-3xl mx-auto mb-8">
-              Explore {allRestaurants.restaurants?.length}+ restaurants in {user?.profile?.address[0].state} with diverse cuisines, 
+              Explore {allRestaurants?.restaurants?.length}+ restaurants in {user?.profile?.address[0]?.state} with diverse cuisines, 
               great offers, and lightning-fast delivery
             </p>
           </div>
@@ -1070,6 +1071,8 @@ const RestaurantsPage = () => {
           </div>
         )}
       </div>
+
+      <CartButton />
 
       <Footer />
     </div>

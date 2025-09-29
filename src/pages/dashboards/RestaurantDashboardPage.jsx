@@ -253,7 +253,7 @@ const RestaurantDashboardPage = () => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'overview': return <Overview user={user} recentOrders={recentOrders} />;
+            case 'overview': return <Overview recentOrders={recentOrders} />;
             case 'menu': return <MenuManagement />;
             case 'orders': return <Orders recentOrders={recentOrders} />;
             case 'analytics': return <Analytics dashboardStats={dashboardStats} trendingItems={trendingItems} />;
