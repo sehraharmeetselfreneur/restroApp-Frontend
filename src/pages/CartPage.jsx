@@ -25,14 +25,16 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/home/Navbar';
 import useAuthStore from '../store/useAuthStore';
-import { addToCartApi, removeFromCartApi } from '../api/cartApi';
+import { addToCartApi, removeFromCartApi, removeItemFromCartApi } from '../api/cartApi';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getCustomerProfile } from '../api/customerApi';
+import { useNavigate } from 'react-router-dom';
 
 const CartPage = () => {
     const { user, setUser } = useAuthStore();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState(null);
@@ -65,6 +67,17 @@ const CartPage = () => {
             toast.error(error.response.data?.message || "Something went wrong");
         }
     });
+    const removeItemFromCartMutation = useMutation({
+        mutationFn: removeItemFromCartApi,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    })
 
     const updateQuantity = (itemId, variantId = null) => {
         if(user){
@@ -84,6 +97,10 @@ const CartPage = () => {
     const removeItem = (itemId, variantId = null) => {
         removeFromCartMutation.mutate(itemId, variantId);
     };
+
+    const removeFoodItem = (itemId, variantId = '') => {
+        removeItemFromCartMutation.mutate({itemId: itemId, variantId: variantId});
+    }
 
     const applyPromoCode = () => {
     if (promoCode.toUpperCase() === 'SAVE20') {
@@ -133,8 +150,9 @@ const CartPage = () => {
   if (user.cart.items.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center">
+        <Navbar />
+        <div className="max-w-7xl mt-20 mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center flex flex-col justify-center items-center">
             <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
               <ShoppingCart className="h-16 w-16 text-gray-400" />
             </div>
@@ -142,7 +160,7 @@ const CartPage = () => {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
               Looks like you haven't added anything to your cart yet. Start exploring our menu!
             </p>
-            <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2">
+            <button onClick={() => navigate("/restaurants")} className="bg-gradient-to-r cursor-pointer from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2">
               <span>Browse Restaurants</span>
               <ArrowRight className="h-5 w-5" />
             </button>
@@ -216,13 +234,12 @@ const CartPage = () => {
               </div>
 
               <div className="divide-y divide-gray-200">
-                {user?.cart?.items?.map((item, index) => {
+                {user?.cart?.items?.map(item => {
                   const foodItem = item.foodItemId;
                   const price = foodItem.discount_price || foodItem.price;
                   const itemTotal = price * item.quantity;
-
                   return (
-                    <div key={index} className="p-6 hover:bg-gray-50 transition-all duration-300">
+                    <div key={foodItem._id} className="p-6 hover:bg-gray-50 transition-all duration-300">
                       <div className="flex gap-6">
                         {/* Image */}
                         <div className="relative flex-shrink-0">
@@ -307,7 +324,7 @@ const CartPage = () => {
 
                               {/* Remove Button */}
                               <button
-                                onClick={() => removeItem(item._id)}
+                                onClick={() => removeFoodItem(foodItem._id, "")}
                                 className="w-10 h-10 cursor-pointer flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-300"
                               >
                                 <Trash2 className="h-5 w-5" />

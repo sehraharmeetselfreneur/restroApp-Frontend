@@ -22,3 +22,32 @@ export const removeFromCartApi = async (foodItemId, variant) => {
         throw err;
     }
 }
+
+export const removeItemFromCartApi = async ({ itemId, variantId }) => {
+    try{
+        const data = {
+            foodItemId: itemId,
+            variantId: variantId || ""
+        };
+
+        console.log(data);
+
+        const res = await axiosInstance.post('/cart/delete', data);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in removeItemFromCartApi: ", err);
+        throw err;
+    }
+}
+
+export const clearCartApi = async () => {
+    try{
+        const res = await axiosInstance.delete('/cart/clear');
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in clearCartApi: ", err);
+        throw err;
+    }
+}
