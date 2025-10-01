@@ -7,6 +7,9 @@ const CartButton = () => {
     const { user, role } = useAuthStore();
     const navigate = useNavigate();
 
+    const totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0);
+    console.log(totalItems);
+
     return (
         <div>
             {user && role === "Customer" && user?.cart?.items?.length > 0 &&
@@ -15,7 +18,7 @@ const CartButton = () => {
                   <ShoppingCart className="h-8 w-8" />
                   {user?.cart?.items?.length > 0 &&
                       <span className="absolute -top-1 -right-0 bg-red-700 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                          {user.cart.items.length}
+                          {totalItems}
                       </span>
                   }
                 </button>

@@ -53,3 +53,25 @@ export const logoutCustomer = async () => {
         throw err;
     }
 }
+
+export const addAddress = async (newAddress) => {
+    try{
+        const res = await axiosInstance.post('/customer/address', newAddress);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in addAddress: ", err);
+        throw err;
+    }
+}
+
+export const deleteAddress = async ({ tag }) => {
+    try{
+        const res = await axiosInstance.post(`/customer/address/${tag}`);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in deleteAddress: ", err);
+        throw err;
+    }
+}

@@ -37,117 +37,147 @@ import {
   Coffee
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { addAddress, deleteAddress, getCustomerProfile } from '../../api/customerApi';
 
 const CustomerProfilePage = () => {
-  const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isEditing, setIsEditing] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
-  const [newAddress, setNewAddress] = useState({ type: 'home', address: '', landmark: '' });
+    const { user, setUser } = useAuthStore();
+    const queryClient = useQueryClient();
 
-  // Mock user data
-  const [userData, setUserData] = useState({
-    name: 'Priya Sharma',
-    email: 'priya.sharma@gmail.com',
-    phone: '+91 98765 43210',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b5c9?w=150&h=150&fit=crop&crop=face',
-    joinDate: 'Member since Jan 2023',
-    totalOrders: 247,
-    totalSpent: 45680,
-    favoriteRestaurants: 23,
-    reviewsGiven: 89,
-    loyaltyPoints: 2450,
-    currentTier: 'Gold',
-    addresses: [
-      { id: 1, type: 'home', address: 'Flat 201, Sunrise Apartments, Sector 15, Faridabad', landmark: 'Near Metro Station', isDefault: true },
-      { id: 2, type: 'work', address: 'Tower A, Cyber City, Gurgaon, Haryana', landmark: 'DLF Phase 2', isDefault: false },
-      { id: 3, type: 'other', address: 'House 45, Green Park Extension, Delhi', landmark: 'Near Green Park Metro', isDefault: false }
-    ]
-  });
+    const [activeTab, setActiveTab] = useState('overview');
+    const [isEditing, setIsEditing] = useState(false);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [newAddress, setNewAddress] = useState({
+        street: '',
+        city: '',
+        state: '',
+        pincode: '',
+        landmark: '',
+        tag: ''
+    });
 
-  const recentOrders = [
-    {
-      id: 'ORD001',
-      restaurant: 'The Spice Route',
-      items: 'Chicken Biryani, Raita, Dessert',
-      date: '2 hours ago',
-      amount: 649,
-      status: 'delivered',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop'
-    },
-    {
-      id: 'ORD002',
-      restaurant: 'Pizza Palace',
-      items: 'Margherita Pizza, Garlic Bread',
-      date: '1 day ago',
-      amount: 899,
-      status: 'delivered',
-      rating: 4,
-      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=80&h=80&fit=crop'
-    },
-    {
-      id: 'ORD003',
-      restaurant: 'Burger Junction',
-      items: 'Classic Burger, Fries, Coke',
-      date: '3 days ago',
-      amount: 456,
-      status: 'delivered',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=80&h=80&fit=crop'
-    }
-  ];
+    const addAddressMutation = useMutation({
+        mutationFn: addAddress,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+            setShowAddressModal(false);
+            setNewAddress({
+                street: '',
+                state: '',
+                city: '',
+                pincode: '',
+                landmark: '',
+                tag: ''
+            });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    })
+    const deleteAddressMutation = useMutation({
+        mutationFn: deleteAddress,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getCustomerProfile(), "Customer");
+            setConfirmDelete(false);
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        } 
+    });
 
-  const favoriteRestaurants = [
-    { id: 1, name: 'The Spice Route', cuisine: 'North Indian', rating: 4.5, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop' },
-    { id: 2, name: 'Pizza Palace', cuisine: 'Italian', rating: 4.7, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100&h=100&fit=crop' },
-    { id: 3, name: 'Sushi Zen', cuisine: 'Japanese', rating: 4.6, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=100&h=100&fit=crop' },
-    { id: 4, name: 'Taco Fiesta', cuisine: 'Mexican', rating: 4.4, image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=100&h=100&fit=crop' }
-  ];
+    // Mock user data
+    const [userData, setUserData] = useState({
+      name: 'Priya Sharma',
+      email: 'priya.sharma@gmail.com',
+      phone: '+91 98765 43210',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b5c9?w=150&h=150&fit=crop&crop=face',
+      joinDate: 'Member since Jan 2023',
+      totalOrders: 247,
+      totalSpent: 45680,
+      favoriteRestaurants: 23,
+      reviewsGiven: 89,
+      loyaltyPoints: 2450,
+      currentTier: 'Gold',
+      addresses: [
+        { id: 1, type: 'home', address: 'Flat 201, Sunrise Apartments, Sector 15, Faridabad', landmark: 'Near Metro Station', isDefault: true },
+        { id: 2, type: 'work', address: 'Tower A, Cyber City, Gurgaon, Haryana', landmark: 'DLF Phase 2', isDefault: false },
+        { id: 3, type: 'other', address: 'House 45, Green Park Extension, Delhi', landmark: 'Near Green Park Metro', isDefault: false }
+      ]
+    });
 
-  const achievements = [
-    { icon: Award, title: 'Foodie Explorer', description: 'Ordered from 50+ restaurants', color: 'from-yellow-400 to-orange-500' },
-    { icon: Crown, title: 'Gold Member', description: 'Reached Gold tier status', color: 'from-yellow-500 to-yellow-600' },
-    { icon: Star, title: 'Top Reviewer', description: 'Written 50+ helpful reviews', color: 'from-blue-400 to-purple-500' },
-    { icon: Zap, title: 'Speed Orderer', description: 'Completed 100+ orders', color: 'from-green-400 to-emerald-500' }
-  ];
+    const recentOrders = [
+      {
+        id: 'ORD001',
+        restaurant: 'The Spice Route',
+        items: 'Chicken Biryani, Raita, Dessert',
+        date: '2 hours ago',
+        amount: 649,
+        status: 'delivered',
+        rating: 5,
+        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop'
+      },
+      {
+        id: 'ORD002',
+        restaurant: 'Pizza Palace',
+        items: 'Margherita Pizza, Garlic Bread',
+        date: '1 day ago',
+        amount: 899,
+        status: 'delivered',
+        rating: 4,
+        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=80&h=80&fit=crop'
+      },
+      {
+        id: 'ORD003',
+        restaurant: 'Burger Junction',
+        items: 'Classic Burger, Fries, Coke',
+        date: '3 days ago',
+        amount: 456,
+        status: 'delivered',
+        rating: 5,
+        image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=80&h=80&fit=crop'
+      }
+    ];
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'orders', label: 'Order History', icon: Package },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'addresses', label: 'Addresses', icon: MapPin },
-    { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'settings', label: 'Settings', icon: Settings }
-  ];
+    const favoriteRestaurants = [
+      { id: 1, name: 'The Spice Route', cuisine: 'North Indian', rating: 4.5, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop' },
+      { id: 2, name: 'Pizza Palace', cuisine: 'Italian', rating: 4.7, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100&h=100&fit=crop' },
+      { id: 3, name: 'Sushi Zen', cuisine: 'Japanese', rating: 4.6, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=100&h=100&fit=crop' },
+      { id: 4, name: 'Taco Fiesta', cuisine: 'Mexican', rating: 4.4, image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=100&h=100&fit=crop' }
+    ];
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    // Save profile logic here
-  };
+    const achievements = [
+      { icon: Award, title: 'Foodie Explorer', description: 'Ordered from 50+ restaurants', color: 'from-yellow-400 to-orange-500' },
+      { icon: Crown, title: 'Gold Member', description: 'Reached Gold tier status', color: 'from-yellow-500 to-yellow-600' },
+      { icon: Star, title: 'Top Reviewer', description: 'Written 50+ helpful reviews', color: 'from-blue-400 to-purple-500' },
+      { icon: Zap, title: 'Speed Orderer', description: 'Completed 100+ orders', color: 'from-green-400 to-emerald-500' }
+    ];
 
-  const handleAddAddress = () => {
-    if (newAddress.address.trim()) {
-      const address = {
-        id: Date.now(),
-        ...newAddress,
-        isDefault: userData.addresses.length === 0
-      };
-      setUserData(prev => ({
-        ...prev,
-        addresses: [...prev.addresses, address]
-      }));
-      setNewAddress({ type: 'home', address: '', landmark: '' });
-      setShowAddressModal(false);
-    }
-  };
+    const tabs = [
+      { id: 'overview', label: 'Overview', icon: User },
+      { id: 'orders', label: 'Order History', icon: Package },
+      { id: 'favorites', label: 'Favorites', icon: Heart },
+      { id: 'addresses', label: 'Addresses', icon: MapPin },
+      { id: 'wallet', label: 'Wallet', icon: Wallet },
+      { id: 'settings', label: 'Settings', icon: Settings }
+    ];
 
-  const handleDeleteAddress = (id) => {
-    setUserData(prev => ({
-      ...prev,
-      addresses: prev.addresses.filter(addr => addr.id !== id)
-    }));
-  };
+    const handleSaveProfile = () => {
+      setIsEditing(false);
+    };
+
+    const handleAddAddress = () => {
+      addAddressMutation.mutate(newAddress);
+    };
+
+    const handleDeleteAddress = (tag) => {
+        deleteAddressMutation.mutate({ tag: tag });
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -232,7 +262,7 @@ const CustomerProfilePage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 group ${
+                    className={`w-full flex cursor-pointer items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 group ${
                       activeTab === tab.id
                         ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-orange-600'
@@ -255,13 +285,6 @@ const CustomerProfilePage = () => {
                 <div className="p-8">
                   <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold text-gray-800">Account Overview</h2>
-                    <button
-                      onClick={() => setIsEditing(!isEditing)}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
-                    </button>
                   </div>
 
                   {/* Achievements */}
@@ -417,7 +440,7 @@ const CustomerProfilePage = () => {
                     <h2 className="text-2xl font-bold text-gray-800">Saved Addresses</h2>
                     <button
                       onClick={() => setShowAddressModal(true)}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      className="flex items-center cursor-pointer space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Add Address</span>
@@ -425,43 +448,70 @@ const CustomerProfilePage = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {userData.addresses.map((address) => (
-                      <div key={address.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group">
+                    {user.profile.address.map((address) => (
+                      <div key={address.tag} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-4">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                              address.type === 'home' ? 'bg-blue-100' :
-                              address.type === 'work' ? 'bg-green-100' : 'bg-purple-100'
+                              address.tag === 'Home' ? 'bg-blue-100' :
+                              address.tag !== 'Home' ? 'bg-green-100' : 'bg-purple-100'
                             }`}>
-                              {address.type === 'home' ? <Home className="h-6 w-6 text-blue-600" /> :
-                               address.type === 'work' ? <Building className="h-6 w-6 text-green-600" /> :
+                              {address.tag === 'Home' ? <Home className="h-6 w-6 text-blue-600" /> :
+                               address.tag !== 'Home' ? <Building className="h-6 w-6 text-green-600" /> :
                                <MapPin className="h-6 w-6 text-purple-600" />}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
-                                <h3 className="text-lg font-bold text-gray-800 capitalize">{address.type}</h3>
+                                <h3 className="text-lg font-bold text-gray-800 capitalize">{address.tag}</h3>
                                 {address.isDefault && (
                                   <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-semibold">
                                     Default
                                   </span>
                                 )}
                               </div>
-                              <p className="text-gray-600 mb-1">{address.address}</p>
+                              <p className="text-gray-600 mb-1">{address.street}, {address.city}</p>
+                              <p className="text-gray-600 mb-1">{address.state}, {address.pincode}</p>
                               <p className="text-sm text-gray-500">{address.landmark}</p>
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <button className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                              <Edit className="h-4 w-4 text-gray-600" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteAddress(address.id)}
-                              className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </button>
+                            {user.profile.address.length > 1 && !address.isDefault &&
+                                <button 
+                                  onClick={() => setConfirmDelete(true)}
+                                  className={`w-10 h-10 cursor-pointer  bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110`}
+                                >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                </button>
+                            }
                           </div>
                         </div>
+
+                        {/* Confirm Delete Modal */}
+                        {confirmDelete && 
+                          <div className="fixed inset-0 min-w-3xl bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-3xl p-8 w-full max-w-[30%]">
+                              <div className="space-y-6">
+                                <div className='flex items-center w-full justify-center text-xl'>
+                                    <p>Are you sure to delete this address?</p>
+                                </div>
+                                <div className="flex space-x-4">
+                                  <button
+                                    onClick={() => handleDeleteAddress(address.tag)}
+                                    className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                                  >
+                                    Delete
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDelete(false)}
+                                    className="flex-1 cursor-pointer bg-gray-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        }
                       </div>
                     ))}
                   </div>
@@ -553,7 +603,16 @@ const CustomerProfilePage = () => {
 
               {activeTab === 'settings' && (
                 <div className="p-8">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-8">Account Settings</h2>
+                    <div className='flex justify-between items-center'>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-8">Account Settings</h2>
+                        <button
+                          onClick={() => setIsEditing(!isEditing)}
+                          className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                        </button>
+                    </div>
                   
                   <div className="space-y-8">
                     {/* Profile Information */}
@@ -564,7 +623,7 @@ const CustomerProfilePage = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                           <input
                             type="text"
-                            value={userData.name}
+                            value={user.profile.customerName}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
                             onChange={(e) => setUserData(prev => ({...prev, name: e.target.value}))}
@@ -574,7 +633,7 @@ const CustomerProfilePage = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                           <input
                             type="email"
-                            value={userData.email}
+                            value={user.profile.email}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
                             onChange={(e) => setUserData(prev => ({...prev, email: e.target.value}))}
@@ -584,7 +643,7 @@ const CustomerProfilePage = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                           <input
                             type="tel"
-                            value={userData.phone}
+                            value={user.profile.phone}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
                             onChange={(e) => setUserData(prev => ({...prev, phone: e.target.value}))}
@@ -595,14 +654,14 @@ const CustomerProfilePage = () => {
                         <div className="flex space-x-4 mt-6">
                           <button
                             onClick={handleSaveProfile}
-                            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                            className="flex items-center cursor-pointer space-x-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                           >
                             <Save className="h-4 w-4" />
                             <span>Save Changes</span>
                           </button>
                           <button
                             onClick={() => setIsEditing(false)}
-                            className="flex items-center space-x-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                            className="flex items-center cursor-pointer space-x-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                           >
                             <X className="h-4 w-4" />
                             <span>Cancel</span>
@@ -681,72 +740,92 @@ const CustomerProfilePage = () => {
 
       {/* Add Address Modal */}
       {showAddressModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md">
+        <div className="fixed inset-0 min-w-3xl bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-[70%]">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-800">Add New Address</h3>
               <button
                 onClick={() => setShowAddressModal(false)}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300"
+                className="w-10 h-10 bg-gray-100 cursor-pointer hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300"
               >
                 <X className="h-5 w-5 text-gray-600" />
               </button>
             </div>
             
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address Type</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {['home', 'work', 'other'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setNewAddress(prev => ({...prev, type}))}
-                      className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 ${
-                        newAddress.type === type
-                          ? 'border-orange-500 bg-orange-50 text-orange-600'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                      }`}
-                    >
-                      {type === 'home' ? <Home className="h-6 w-6 mb-2" /> :
-                       type === 'work' ? <Building className="h-6 w-6 mb-2" /> :
-                       <MapPin className="h-6 w-6 mb-2" />}
-                      <span className="text-sm font-medium capitalize">{type}</span>
-                    </button>
-                  ))}
+              <div className='grid grid-cols-2 gap-4 w-full'>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                  <input
+                    type="text"
+                    value={newAddress.street}
+                    onChange={(e) => setNewAddress(prev => ({...prev, street: e.target.value}))}
+                    placeholder="Street"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Address</label>
-                <textarea
-                  value={newAddress.address}
-                  onChange={(e) => setNewAddress(prev => ({...prev, address: e.target.value}))}
-                  placeholder="Enter your complete address"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none h-24"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Landmark (Optional)</label>
-                <input
-                  type="text"
-                  value={newAddress.landmark}
-                  onChange={(e) => setNewAddress(prev => ({...prev, landmark: e.target.value}))}
-                  placeholder="Nearby landmark"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newAddress.city}
+                    onChange={(e) => setNewAddress(prev => ({...prev, city: e.target.value}))}
+                    placeholder="City"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={newAddress.state}
+                    onChange={(e) => setNewAddress(prev => ({...prev, state: e.target.value}))}
+                    placeholder="State"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
+                  <input
+                    type="text"
+                    value={newAddress.pincode}
+                    onChange={(e) => setNewAddress(prev => ({...prev, pincode: e.target.value}))}
+                    placeholder="Pincode"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Landmark (Optional)</label>
+                  <input
+                    type="text"
+                    value={newAddress.landmark}
+                    onChange={(e) => setNewAddress(prev => ({...prev, landmark: e.target.value}))}
+                    placeholder="Nearby landmark"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+                  <input
+                    type="text"
+                    value={newAddress.tag}
+                    onChange={(e) => setNewAddress(prev => ({...prev, tag: e.target.value}))}
+                    placeholder="Nearby landmark"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
               </div>
 
               <div className="flex space-x-4">
                 <button
                   onClick={handleAddAddress}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
                   Add Address
                 </button>
                 <button
                   onClick={() => setShowAddressModal(false)}
-                  className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="flex-1 cursor-pointer bg-gray-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
                   Cancel
                 </button>

@@ -38,6 +38,7 @@ const Navbar = ({ location = "Faridabad, Haryana" }) => {
 
     const profileRef = useRef(null);
     const locationRef = useRef(null);
+    const totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0);
 
     const customerLogoutMutation = useMutation({
         mutationFn: logoutCustomer,
@@ -218,7 +219,7 @@ const Navbar = ({ location = "Faridabad, Haryana" }) => {
                                         </div>
                                         {user.cart?.items?.length > 0 &&
                                             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
-                                                {user.cart.items.length}
+                                                {totalItems}
                                             </span>
                                         }
                                     </Link>

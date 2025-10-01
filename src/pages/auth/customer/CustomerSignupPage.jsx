@@ -64,7 +64,7 @@ const CustomerSignupPage = () => {
             toast.success(data.message);
             localStorage.removeItem("customerSignupForm");
             localStorage.removeItem("customerCurrentStep");
-            setUser(await getCustomerProfile());
+            setUser(await getCustomerProfile(), "Customer");
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
             navigate("/");
         },
