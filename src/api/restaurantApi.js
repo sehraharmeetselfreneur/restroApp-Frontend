@@ -170,3 +170,14 @@ export const deleteFoodItem = async (foodItemId) => {
         throw err;
     }
 }
+
+export const updateRestaurantAvailability = async () => {
+    try{
+        const res = await axiosInstance.put('/restaurant/available');
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in updateRestaurantAvailability: ", err);
+        throw err;
+    }
+}

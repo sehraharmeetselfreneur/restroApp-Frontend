@@ -29,7 +29,8 @@ import {
   ShoppingCart,
   Eye,
   Share2,
-  Bookmark
+  Bookmark,
+  BadgeCheck
 } from 'lucide-react';
 import Navbar from '../components/home/Navbar';
 import Footer from '../components/home/Footer';
@@ -876,9 +877,9 @@ const RestaurantsPage = () => {
                     </span>
                   )}
                   {restaurant.isVerified && (
-                    <span className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg flex items-center">
-                      <Check className="h-3 w-3 mr-1" />
+                    <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg flex items-center">
                       VERIFIED
+                      <BadgeCheck className="h-3 w-3 ml-1" />
                     </span>
                   )}
                 </div>
@@ -942,8 +943,13 @@ const RestaurantsPage = () => {
               <div className={`p-6 ${viewMode === 'list' ? 'flex-1 flex flex-col' : ''}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors">
+                    <h3 className="text-xl font-bold flex items-center justify-start gap-2 text-gray-800 mb-1 group-hover:text-orange-600 transition-colors">
                       {restaurant.restaurantName}
+                      {restaurant.isVerified && (
+                        <span className="bg-green-500 text-white text-xs p-1 rounded-full font-bold shadow-lg flex items-center justify-center">
+                          <BadgeCheck className="h-3 w-3" />
+                        </span>
+                      )}
                     </h3>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{restaurant.description}</p>
                     <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -961,9 +967,9 @@ const RestaurantsPage = () => {
 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-full">
-                      <Star className="h-4 w-4 text-green-600 fill-green-600" />
-                      <span className="text-sm font-bold text-green-600">{restaurant.rating}</span>
+                    <div className="flex items-center space-x-1 bg-orange-100 px-3 py-1 rounded-full">
+                      <Star className="h-4 w-4 text-orange-600 fill-orange-600" />
+                      <span className="text-sm font-bold text-orange-600">{restaurant.rating}</span>
                     </div>
                     <span className="text-sm text-gray-500">({restaurant.orders.length} orders)</span>
                     <span className="text-sm font-semibold text-gray-700">{restaurant.priceRange}</span>

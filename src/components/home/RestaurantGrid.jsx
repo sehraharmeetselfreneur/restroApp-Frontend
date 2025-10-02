@@ -470,7 +470,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                     <div className="bg-white/95 backdrop-blur-sm rounded-full px-2 py-1 shadow-md">
                       <div className="flex items-center space-x-1">
                         <MapPin className="h-3 w-3 text-gray-600" />
-                        <span className="text-xs font-semibold text-gray-800">{restaurant.distance < 5000 ? "Closest" : (restaurant.distance/1000).toFixed(1) + "km"}</span>
+                        <span className="text-xs font-semibold text-gray-800">{restaurant.address.state}</span>
                       </div>
                     </div>
                   </div>
@@ -489,7 +489,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                       <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors line-clamp-1">
                         {restaurant.restaurantName}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-2 line-clamp-1">{restaurant.cuisines?.[0]}, {restaurant.cuisines?.[1]}</p>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-1">{restaurant.cuisines?.[0]}, {restaurant.cuisines?.[1]} +{restaurant.cuisines.length - 2} more</p>
                     </div>
                   </div>
 
@@ -499,7 +499,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                         <Star className="h-3 w-3 text-green-600 fill-green-600" />
                         <span className="text-xs font-bold text-green-600">{restaurant.rating}</span>
                       </div>
-                      <span className="text-xs text-gray-500">({restaurant.reviews || 0})</span>
+                      <span className="text-xs text-gray-500">({restaurant.reviews.length || 0})</span>
                     </div>
                     <div className="flex items-center space-x-1 text-gray-600">
                       <span className="text-sm font-semibold">{restaurant.price || 500}</span>

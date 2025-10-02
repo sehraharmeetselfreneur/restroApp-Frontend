@@ -25,9 +25,12 @@ import {
   Download
 } from 'lucide-react';
 import Navbar from '../components/home/Navbar';
+import useAuthStore from '../store/useAuthStore';
 
 const TrackOrderPage = () => {
-  const [orders, setOrders] = useState([]);
+  const { user } = useAuthStore();
+
+  const orders = user.orders
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,138 +39,11 @@ const TrackOrderPage = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    fetchOrders();
   }, []);
 
   useEffect(() => {
     filterOrders();
   }, [selectedStatus, searchQuery, orders]);
-
-  const fetchOrders = () => {
-    // Mock orders data - replace with actual API call
-    const mockOrders = [
-      {
-        _id: "order1",
-        customer_id: "customer123",
-        restaurant_id: {
-          _id: "rest1",
-          restaurantName: "The Spice Route",
-          phone: "+91 98765 43210"
-        },
-        orderStatus: "delivered",
-        paymentStatus: "paid",
-        paymentType: "COD",
-        items: [
-          {
-            foodItem: {
-              _id: "food1",
-              name: "Chicken Biryani",
-              images: ["/path/to/image1.jpg"],
-              isVeg: false
-            },
-            variant: "Large",
-            quantity: 2,
-            price: 450,
-            subtotal: 900
-          }
-        ],
-        special_instructions: "Extra spicy please",
-        totalAmount: 900,
-        deliveryFee: 50,
-        discountApplied: 100,
-        finalAmount: 850,
-        deliveryAddress: {
-          street: "Sector 15, Main Market",
-          city: "Faridabad",
-          state: "Haryana",
-          pincode: "121007",
-          landmark: "Near Metro Station"
-        },
-        createdAt: "2025-01-15T10:30:00.000Z",
-        deliveredAt: "2025-01-15T11:45:00.000Z"
-      },
-      {
-        _id: "order2",
-        customer_id: "customer123",
-        restaurant_id: {
-          _id: "rest2",
-          restaurantName: "Pizza Palace",
-          phone: "+91 98765 43211"
-        },
-        orderStatus: "outForDelivery",
-        paymentStatus: "paid",
-        paymentType: "COD",
-        items: [
-          {
-            foodItem: {
-              _id: "food2",
-              name: "Margherita Pizza",
-              images: ["/path/to/image2.jpg"],
-              isVeg: true
-            },
-            variant: "Medium",
-            quantity: 1,
-            price: 399,
-            subtotal: 399
-          }
-        ],
-        special_instructions: "",
-        totalAmount: 399,
-        deliveryFee: 0,
-        discountApplied: 0,
-        finalAmount: 399,
-        deliveryAddress: {
-          street: "Tower A, Cyber City",
-          city: "Gurgaon",
-          state: "Haryana",
-          pincode: "122002",
-          landmark: "DLF Phase 2"
-        },
-        createdAt: "2025-01-16T14:20:00.000Z",
-        outForDeliveryAt: "2025-01-16T14:50:00.000Z"
-      },
-      {
-        _id: "order3",
-        customer_id: "customer123",
-        restaurant_id: {
-          _id: "rest3",
-          restaurantName: "Burger Junction",
-          phone: "+91 98765 43212"
-        },
-        orderStatus: "preparing",
-        paymentStatus: "paid",
-        paymentType: "COD",
-        items: [
-          {
-            foodItem: {
-              _id: "food3",
-              name: "Chicken Burger",
-              images: ["/path/to/image3.jpg"],
-              isVeg: false
-            },
-            variant: null,
-            quantity: 3,
-            price: 220,
-            subtotal: 660
-          }
-        ],
-        special_instructions: "No onions",
-        totalAmount: 660,
-        deliveryFee: 50,
-        discountApplied: 60,
-        finalAmount: 650,
-        deliveryAddress: {
-          street: "Sector 15, Main Market",
-          city: "Faridabad",
-          state: "Haryana",
-          pincode: "121007",
-          landmark: "Near Metro Station"
-        },
-        createdAt: "2025-01-16T16:00:00.000Z"
-      }
-    ];
-    setOrders(mockOrders);
-  };
 
   const filterOrders = () => {
     let filtered = orders;

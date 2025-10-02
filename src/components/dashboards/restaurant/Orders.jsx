@@ -4,6 +4,7 @@ import VerificationBanner from "./VerificationBanner";
 
 const Orders = ({ recentOrders }) => {
     const { user } = useAuthStore();
+    const orders = user.orders;
 
     return (
         <div className="space-y-6">
@@ -35,32 +36,32 @@ const Orders = ({ recentOrders }) => {
                     </div>
                 
                     <div className="space-y-4">
-                        {recentOrders.map((order) => (
-                            <div key={order.id} className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all">
+                        {orders.map((order) => (
+                            <div key={order._id} className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all">
                                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-xl ${order.color} text-white shadow-sm`}>
+                                        <div className={`p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm`}>
                                             <ShoppingBag size={20} />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-3 mb-1">
-                                                <p className="text-lg font-bold text-gray-800">Order #{order.id}</p>
+                                                <p className="text-lg font-bold text-gray-800">Order #{order._id}</p>
                                                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                                    order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' :
-                                                    order.status === 'Ready' ? 'bg-green-100 text-green-700' :
+                                                    order.orderStatus === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                                    order.orderStatus === 'outForDelivery' ? 'bg-green-100 text-green-700' :
                                                     'bg-blue-100 text-blue-700'
                                                 }`}>
-                                                    {order.status}
+                                                    {order.orderStatus}
                                                 </span>
                                             </div>
-                                            <p className="text-gray-600 font-medium">{order.customerName}</p>
-                                            <p className="text-sm text-gray-500">{order.items} items • ₹{order.price} • {order.time}</p>
+                                            <p className="text-gray-600 font-medium">{order.customer_id.customerName}</p>
+                                            <p className="text-sm text-gray-500">{order.items.length} items • ₹{order.totalAmount} • </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-6 text-sm text-gray-500">
                                         <div className="flex items-center gap-2">
                                             <Clock size={16} />
-                                            <span>{order.eta}</span>
+                                            <span>{user.profile.avgPrepTime || "30Mins"}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <MapPin size={16} />

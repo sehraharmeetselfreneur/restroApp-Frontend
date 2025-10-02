@@ -1,8 +1,28 @@
 import { Settings } from "lucide-react";
 import useAuthStore from "../../../store/useAuthStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRestaurantProfile, updateRestaurantAvailability } from "../../../api/restaurantApi";
+import toast from "react-hot-toast";
 
 const SettingsComponent = () => {
-    const { user } = useAuthStore();
+    const { user, setUser } = useAuthStore();
+    const queryClient = useQueryClient();
+
+    const updateRestaurantAvailabilityMutation = useMutation({
+        mutationFn: updateRestaurantAvailability,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getRestaurantProfile(), "Restaurant");
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    })
+
+    const handleRestaurantAvailability = () => {
+        updateRestaurantAvailabilityMutation.mutate();
+    }
 
     return (
         <div className="space-y-6">
@@ -29,7 +49,7 @@ const SettingsComponent = () => {
                                     </span>
                                 </p>
                             </div>
-                            <button className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                            <button onClick={handleRestaurantAvailability} className={`px-6 py-3 cursor-pointer rounded-xl font-medium transition-all ${
                                 user?.profile?.isOpen 
                                     ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' 
                                     : 'bg-green-500 hover:bg-green-600 text-white shadow-lg'

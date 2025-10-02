@@ -5,6 +5,18 @@ import VerificationBanner from "./VerificationBanner";
 const Overview = ({ recentOrders }) => {
     const { user } = useAuthStore();
 
+    const todayOrders = user.orders.filter((order) => {
+        const orderDate = new Date(order.createdAt);
+        const today = new Date();
+
+        // Normalize both to "YYYY-MM-DD"
+        const orderDay = orderDate.toISOString().split("T")[0];
+        const todayDay = today.toISOString().split("T")[0];
+
+        return orderDay === todayDay;
+    });
+    console.log(todayOrders);
+
     const dashboardStats = {
         totalOrders: 1247,
         todayOrders: 32,
@@ -34,7 +46,7 @@ const Overview = ({ recentOrders }) => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">Today's Orders</p>
-                                    <p className="text-3xl font-bold text-blue-700 mt-1">{dashboardStats.todayOrders}</p>
+                                    <p className="text-3xl font-bold text-blue-700 mt-1">{todayOrders.length}</p>
                                     <p className="text-sm text-blue-500 mt-1">+12% from yesterday</p>
                                 </div>
                                 <div className="p-3 bg-blue-500 rounded-xl">

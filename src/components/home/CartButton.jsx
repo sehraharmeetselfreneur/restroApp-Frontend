@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import useAuthStore from '../../store/useAuthStore'
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
@@ -7,8 +7,10 @@ const CartButton = () => {
     const { user, role } = useAuthStore();
     const navigate = useNavigate();
 
-    const totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0);
-    console.log(totalItems);
+    let totalItems = 0;
+    useEffect(() => {
+      totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0)
+    }, [user?.cart]);
 
     return (
         <div>

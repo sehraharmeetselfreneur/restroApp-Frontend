@@ -39,7 +39,7 @@ import {
 import useAuthStore from '../../store/useAuthStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { addAddress, deleteAddress, getCustomerProfile } from '../../api/customerApi';
+import { addAddress, deleteAddress, getCustomerProfile, updateCustomerProfile } from '../../api/customerApi';
 
 const CustomerProfilePage = () => {
     const { user, setUser } = useAuthStore();
@@ -56,6 +56,11 @@ const CustomerProfilePage = () => {
         pincode: '',
         landmark: '',
         tag: ''
+    });
+    const [updateProfile, setUpdateProfile] = useState({
+        fullName: user.profile.customerName,
+        email: user.profile.email,
+        phone: user.profile.phone
     });
 
     const addAddressMutation = useMutation({
@@ -90,6 +95,18 @@ const CustomerProfilePage = () => {
             toast.error(error.response.data?.message || "Something went wrong");
         } 
     });
+    const updateProfileMutation = useMutation({
+        mutationFn: updateCustomerProfile,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setIsEditing(false);
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    })
 
     // Mock user data
     const [userData, setUserData] = useState({
@@ -178,6 +195,20 @@ const CustomerProfilePage = () => {
     const handleDeleteAddress = (tag) => {
         deleteAddressMutation.mutate({ tag: tag });
     };
+
+    const handleUpdateProfile = () => {
+        console.log(updateProfile);
+        updateProfileMutation.mutate(updateProfile);
+    }
+
+    const handleCancelUpdate = () => {
+        setIsEditing(false);
+        setUpdateProfile({
+            fullName: user.profile.customerName,
+            email: user.profile.email,
+            phone: user.profile.phone
+        });
+    }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -349,27 +380,28 @@ const CustomerProfilePage = () => {
                   </div>
 
                   <div className="space-y-6">
-                    {recentOrders.map((order) => (
-                      <div key={order.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group">
+                    {user.orders.map((order) => (
+                      <div key={order._id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group">
                         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                           <img 
-                            src={order.image} 
-                            alt={order.restaurant}
-                            className="w-20 h-20 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
+                            src={import.meta.env.VITE_BACKEND_URL + order.restaurant_id.bannerImage} 
+                            alt={order.restaurant || "OrderImage"}
+                            className="w-25 h-25 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
                           />
                           <div className="flex-1">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                               <div>
-                                <h3 className="text-xl font-bold text-gray-800 mb-1">{order.restaurant}</h3>
-                                <p className="text-gray-600 mb-2">{order.items}</p>
+                                <h3 className="text-xl font-bold text-gray-800 mb-1">{order.restaurant_id.restaurantName}</h3>
+                                <p className="text-gray-600 mb-2">Items: {order.items.length}</p>
+                                <p>{order.items.map((item) => (item.foodItem.name + ", "))}</p>
                                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                                   <div className="flex items-center space-x-1">
                                     <Timer className="h-4 w-4" />
-                                    <span>{order.date}</span>
+                                    <span>{order.createdAt.split("T")[0]}</span>
                                   </div>
                                   <div className="flex items-center space-x-1">
                                     <Wallet className="h-4 w-4" />
-                                    <span>₹{order.amount}</span>
+                                    <span>₹{order.totalAmount}</span>
                                   </div>
                                 </div>
                               </div>
@@ -605,13 +637,15 @@ const CustomerProfilePage = () => {
                 <div className="p-8">
                     <div className='flex justify-between items-center'>
                         <h2 className="text-2xl font-bold text-gray-800 mb-8">Account Settings</h2>
-                        <button
-                          onClick={() => setIsEditing(!isEditing)}
-                          className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
-                        </button>
+                        {!isEditing &&
+                            <button
+                              onClick={() => setIsEditing(true)}
+                              className="flex items-center cursor-pointer space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span>Edit Profile</span>
+                            </button>
+                        }
                     </div>
                   
                   <div className="space-y-8">
@@ -623,44 +657,44 @@ const CustomerProfilePage = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                           <input
                             type="text"
-                            value={user.profile.customerName}
+                            value={updateProfile.fullName}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                            onChange={(e) => setUserData(prev => ({...prev, name: e.target.value}))}
+                            onChange={(e) => setUpdateProfile(prev => ({...prev, fullName: e.target.value}))}
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                           <input
                             type="email"
-                            value={user.profile.email}
+                            value={updateProfile.email}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                            onChange={(e) => setUserData(prev => ({...prev, email: e.target.value}))}
+                            onChange={(e) => setUpdateProfile(prev => ({...prev, email: e.target.value}))}
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                           <input
                             type="tel"
-                            value={user.profile.phone}
+                            value={updateProfile.phone}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                            onChange={(e) => setUserData(prev => ({...prev, phone: e.target.value}))}
+                            onChange={(e) => setUpdateProfile(prev => ({...prev, phone: e.target.value}))}
                           />
                         </div>
                       </div>
                       {isEditing && (
                         <div className="flex space-x-4 mt-6">
                           <button
-                            onClick={handleSaveProfile}
+                            onClick={handleUpdateProfile}
                             className="flex items-center cursor-pointer space-x-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                           >
                             <Save className="h-4 w-4" />
                             <span>Save Changes</span>
                           </button>
                           <button
-                            onClick={() => setIsEditing(false)}
+                            onClick={handleCancelUpdate}
                             className="flex items-center cursor-pointer space-x-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                           >
                             <X className="h-4 w-4" />

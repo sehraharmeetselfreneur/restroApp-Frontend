@@ -54,6 +54,17 @@ export const logoutCustomer = async () => {
     }
 }
 
+export const updateCustomerProfile = async (data) => {
+    try{
+        const res = await axiosInstance.put('/customer/profile', data);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in updateProfile: ", err);
+        throw err;
+    }
+}
+
 export const addAddress = async (newAddress) => {
     try{
         const res = await axiosInstance.post('/customer/address', newAddress);

@@ -26,12 +26,15 @@ import useAuthStore from '../store/useAuthStore';
 import toast from 'react-hot-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addAddress, getCustomerProfile } from '../api/customerApi';
+import Navbar from '../components/home/Navbar'
+import { createOrder } from '../api/orderApi';
 
 const OrderPage = () => {
   const { user, setUser } = useAuthStore();
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [orderData, setOrderData] = useState({
     customer_id: user?.profile?._id,
     restaurant_id: user?.cart?.items[0]?.foodItemId?.restaurant_id,
@@ -40,7 +43,8 @@ const OrderPage = () => {
       city: '',
       state: '',
       pincode: '',
-      landmark: ''
+      landmark: '',
+      coordinates: []
     },
     paymentMethod: '',
     special_instructions: '',
@@ -57,7 +61,6 @@ const OrderPage = () => {
       tag: ''
     }
   });
-  const [selectedAddress, setSelectedAddress] = useState(null);
   const [useExistingAddress, setUseExistingAddress] = useState(true);
 
   const addAddressMutation = useMutation({
@@ -80,7 +83,19 @@ const OrderPage = () => {
     onError: (error) => {
         toast.error(error.response.data?.message || "Something went wrong");
     }
-  })
+  });
+  const placeOrderMutation = useMutation({
+    mutationFn: createOrder,
+    onSuccess: async (data) => {
+        toast.success(data.message);
+        setUser(await getCustomerProfile(), "Customer");
+        queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        navigate("/");
+    },
+    onError: (error) => {
+        toast.error(error.response.data?.message || "Something went wrong");
+    }
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -107,19 +122,19 @@ const OrderPage = () => {
   const handleAddressSelect = (address) => {
     setSelectedAddress(address);
     setOrderData(prev => ({
-      ...prev,
-      deliveryAddress: {
-        street: address.street,
+        ...prev,
+        deliveryAddress: {
+            street: address.street,
         city: address.city,
         state: address.state,
         pincode: address.pincode,
-        landmark: address.landmark || ''
-      }
+        landmark: address.landmark || '',
+        coordinates: [address.geoLocation.lng, address.geoLocation.lat]
+    }
     }));
   };
 
   const handleAddAddress = () => {
-    console.log(newAddress.newAddress);
     addAddressMutation.mutate(newAddress.newAddress);
   }
 
@@ -167,21 +182,9 @@ const OrderPage = () => {
       toast.error('Please fill all required fields');
       return;
     }
-
-    // API call to place order
-    console.log('Order data:', {
-      ...orderData,
-      items: user.cart.items,
-      totalAmount: calculateSubtotal(),
-      deliveryFee,
-      finalAmount,
-      customer_id: user.profile?._id,
-      restaurant_id: user.cart.items[0]?.foodItemId.restaurant_id
-    });
-
     console.log(orderData);
-
-    // Navigate to success page
+    
+    placeOrderMutation.mutate(orderData);
   };
 
   const steps = [
@@ -192,6 +195,8 @@ const OrderPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <Navbar />
+
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
