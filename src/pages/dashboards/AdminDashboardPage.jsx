@@ -338,7 +338,7 @@ const AdminDashboardPage = () => {
                 {item.id === "orders" && (
                   <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">73</span>
                 )}
-                {item.id === "verification" && (
+                {item.id === "verification" && unverifiedRestaurants.length > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unverifiedRestaurants.length}</span>
                 )}
               </button>

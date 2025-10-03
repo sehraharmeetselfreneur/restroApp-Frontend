@@ -14,18 +14,22 @@ import {
   TrendingUp,
   SlidersHorizontal,
   Grid3X3,
-  List
+  List,
+  BadgeCheck
 } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNearByRestaurants } from '../../api/homeApi';
 import useAuthStore from '../../store/useAuthStore';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { getCustomerProfile, updateFavourites } from '../../api/customerApi';
 
 const RestaurantGrid = ({ location = "Delhi" }) => {
-    const { user } = useAuthStore();
+    const { user, setUser } = useAuthStore();
+    const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    const [favorites, setFavorites] = useState(new Set([2, 5, 8])); // Pre-selected favorites
+    let favourites = user?.profile?.favourites;
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [showFilters, setShowFilters] = useState(false);
     const [showRating, setShowRating] = useState(false);
@@ -40,6 +44,17 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
         },
         onError: (error) => {
             toast.error(error.response.data?.message);
+        }
+    });
+    const updateFavouritesMutation = useMutation({
+        mutationFn: updateFavourites,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
         }
     });
 
@@ -271,9 +286,18 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
         return restaurant[selectedFilter] === true;
     });
 
+    const handleUpdateFavourites = (id) => {
+        updateFavouritesMutation.mutate(id);
+    }
+
     useEffect(() => {
         getNearByRestaurantsMutation.mutate({ user });
     }, []);
+
+    useEffect(() => {
+        favourites = user?.profile?.favourites || [];
+        console.log(favourites);
+    }, [user]);
 
     useEffect(() => {
         console.log(nearByRestaurants);
@@ -400,7 +424,6 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
             {filteredRestaurants?.map((restaurant) => (
               <div 
                 key={restaurant._id}
-                onClick={() => navigate(`/restaurant/${restaurant._id}`)}
                 className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer group transform hover:-translate-y-1 ${
                   viewMode === 'list' ? 'flex' : ''
                 }`}
@@ -445,14 +468,11 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                 
                   {/* Heart/Favorite */}
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(restaurant._id);
-                    }}
-                    className="absolute cursor-pointer top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all duration-300 group/heart"
+                    onClick={() => handleUpdateFavourites(restaurant._id)}
+                    className="absolute z-100 cursor-pointer top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all duration-300 group/heart"
                   >
                     <Heart 
-                      className={`h-4 w-4 ${favorites.has(restaurant._id) 
+                      className={`h-4 w-4 ${favourites?.includes(restaurant._id) 
                         ? 'text-red-500 fill-red-500' 
                         : 'text-gray-600 group-hover/heart:text-red-500'
                       } transition-all duration-300`}
@@ -483,12 +503,19 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                   )}
                 </div>
 
-                <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                <div onClick={() => navigate(`/restaurant/${restaurant._id}`)} className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors line-clamp-1">
-                        {restaurant.restaurantName}
-                      </h3>
+                      <div className='flex justify-start items-center gap-2'>
+                        <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors line-clamp-1">
+                          {restaurant.restaurantName}
+                        </h3>
+                        {restaurant.isVerified && (
+                          <span className="bg-green-500 text-white text-xs p-1 flex justify-center items-center rounded-full font-bold shadow-lg">
+                            <BadgeCheck className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-600 text-sm mb-2 line-clamp-1">{restaurant.cuisines?.[0]}, {restaurant.cuisines?.[1]} +{restaurant.cuisines.length - 2} more</p>
                     </div>
                   </div>
@@ -508,10 +535,10 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
 
                   {/* Quick Action Buttons - Only show on hover for grid view */}
                   <div className={`flex gap-2`}>
-                    <button type='button' className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white cursor-pointer py-2 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                    <button onClick={() => navigate(`/restaurant/${restaurant._id}`)} type='button' className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white cursor-pointer py-2 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
                       Order Now
                     </button>
-                    <button type='button' className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg cursor-pointer font-medium text-sm transition-all duration-300">
+                    <button onClick={() => navigate(`/restaurant/${restaurant._id}`)} type='button' className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg cursor-pointer font-medium text-sm transition-all duration-300">
                       Menu
                     </button>
                   </div>

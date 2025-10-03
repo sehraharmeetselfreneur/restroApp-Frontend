@@ -32,7 +32,8 @@ import {
   Coffee,
   IceCream,
   Soup,
-  Salad
+  Salad,
+  BadgeCheck
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/home/Navbar';
@@ -41,15 +42,17 @@ import toast from 'react-hot-toast';
 import { getParticularRestaurant } from '../api/homeApi';
 import useAuthStore from '../store/useAuthStore';
 import { addToCartApi, removeFromCartApi } from '../api/cartApi';
-import { getCustomerProfile } from '../api/customerApi';
+import { getCustomerProfile, updateFavourites } from '../api/customerApi';
 import CartButton from '../components/home/CartButton';
 
 const RestaurantMenuPage = () => {
     const { id } = useParams();
-    const queryClient = useQueryClient();
     const { user, setUser } = useAuthStore();
+    const queryClient = useQueryClient();
     const navigate = useNavigate();
+
     const [restaurants, setRestaurant] = useState({});
+    let favourites = user?.favourites?.favourites || [];
 
     const getRestaurantMutation = useMutation({
         mutationFn: getParticularRestaurant,
@@ -82,6 +85,17 @@ const RestaurantMenuPage = () => {
             toast.error(error.response.data?.message || "Something went wrong");
         }
     });
+    const updateFavouriteMutation = useMutation({
+        mutationFn: updateFavourites,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getCustomerProfile(), "Customer");
+            queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
 
     const [activeCategory, setActiveCategory] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -98,7 +112,7 @@ const RestaurantMenuPage = () => {
         quantity: 1
     });
     const [showFilters, setShowFilters] = useState(false);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const isFavorite = favourites?.some((restaurant) => restaurant._id?.toString() === restaurants._id?.toString());
     const [selectedItem, setSelectedItem] = useState(null);
     const [showItemModal, setShowItemModal] = useState(false);
 
@@ -108,43 +122,6 @@ const RestaurantMenuPage = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
-
-    // Mock restaurant data based on your restaurant model
-    const restaurant = {
-    _id: '1',
-    restaurantName: 'The Spice Route',
-    ownerName: 'Rajesh Kumar',
-    description: 'Authentic North Indian cuisine with traditional flavors, aromatic spices, and modern presentation. Experience the rich culinary heritage of India with our carefully crafted dishes.',
-    bannerImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=1200&h=400&fit=crop',
-    cuisines: ['North Indian', 'Mughlai', 'Biryani', 'Punjabi'],
-    rating: 4.5,
-    totalReviews: 2847,
-    phone: '+91 98765 43210',
-    email: 'spiceroute@gmail.com',
-    address: {
-      street: 'Sector 15, Main Market',
-      city: 'Faridabad',
-      state: 'Haryana',
-      pincode: '121007'
-    },
-    openingTime: '11:00',
-    closingTime: '23:00',
-    pureVeg: false,
-    isOpen: true,
-    isVerified: true,
-    isTrending: true,
-    isPromoted: true,
-    fastDelivery: true,
-    images: [
-      'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1563379091339-03246963d51d?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=400&h=300&fit=crop'
-    ],
-    priceRange: '₹₹',
-    deliveryTime: '25-30 min',
-    distance: '1.2 km',
-    offers: ['50% OFF up to ₹100', 'Free Delivery above ₹299', 'Buy 2 Get 1 Free on Desserts']
-    };
 
     // Category icons mapping
     const getCategoryIcon = (categoryName) => {
@@ -205,10 +182,6 @@ const RestaurantMenuPage = () => {
             .reduce((total, item) => total + item.quantity, 0);
     };
 
-    const getTotalCartItems = () => {
-        return user?.profile?.cart?.items?.length || 0;
-    };
-
     const scrollToCategory = (categoryId) => {
         setActiveCategory(categoryId);
         categoryRefs.current[categoryId]?.scrollIntoView({ 
@@ -236,9 +209,18 @@ const RestaurantMenuPage = () => {
         })
     })).filter(category => category.items?.length > 0);
 
+    const handleUpdateFavourites = (id) => {
+        updateFavouriteMutation.mutate(id);
+    }
+
     useEffect(() => {
         getRestaurantMutation.mutate({ id, user });
     }, []);
+
+    useEffect(() => {
+        favourites = user?.favourites?.favourites;
+        console.log(favourites);
+    }, [user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -249,7 +231,7 @@ const RestaurantMenuPage = () => {
         <div className="relative h-96 overflow-hidden">
           <img 
             src={import.meta.env.VITE_BACKEND_URL + restaurants.bannerImage} 
-            alt={restaurant.restaurantName}
+            alt={restaurants.restaurantName}
             className="w-full h-full object-cover blur-sm"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
@@ -257,7 +239,7 @@ const RestaurantMenuPage = () => {
           {/* Floating Action Buttons */}
           <div className="absolute top-6 right-6 flex gap-3">
             <button 
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => handleUpdateFavourites(restaurants._id)}
               className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300"
             >
               <Heart className={`h-6 w-6 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'} transition-colors duration-300`} />
@@ -276,31 +258,32 @@ const RestaurantMenuPage = () => {
               <div className="flex flex-col lg:flex-row lg:items-end gap-6">
                 <div className="flex-1">
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {restaurant.isPromoted && (
+                    {restaurants.isPromoted && (
                       <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
                         PROMOTED
                       </span>
                     )}
-                    {restaurant.isTrending && (
+                    {restaurants.isTrending && (
                       <span className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg flex items-center">
                         <TrendingUp className="h-3 w-3 mr-1" />
                         TRENDING
                       </span>
                     )}
-                    {restaurant.fastDelivery && (
+                    {restaurants.fastDelivery && (
                       <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
                         FAST DELIVERY
                       </span>
                     )}
-                    {restaurant.isVerified && (
-                      <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg flex items-center">
-                        <Check className="h-3 w-3 mr-1" />
-                        VERIFIED
-                      </span>
-                    )}
                   </div>
                   
-                  <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2">{restaurants.restaurantName}</h1>
+                  <h1 className="text-4xl lg:text-5xl flex items-center justify-start gap-3 font-bold text-white mb-2">
+                    {restaurants.restaurantName}
+                    {restaurants.isVerified && (
+                      <h1 className="bg-green-500 text-white text-xs p-1.5 mt-1 rounded-full font-bold shadow-lg">
+                        <BadgeCheck className="h-7 w-7" />
+                      </h1>
+                    )}
+                  </h1>
                   <p className="text-xl text-white/90 mb-4 max-w-3xl">{restaurants.description}</p>
                   
                   <div className="flex flex-wrap gap-6 text-white/90">
@@ -335,7 +318,7 @@ const RestaurantMenuPage = () => {
                   <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full font-semibold text-sm ${
                     restaurants.isOpen ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                   }`}>
-                    <div className={`w-2 h-2 rounded-full ${restaurant.isOpen ? 'bg-white' : 'bg-white'}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${restaurants.isOpen ? 'bg-white' : 'bg-white'}`}></div>
                     <span>{restaurants.isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
                   </div>
                 </div>
@@ -351,7 +334,7 @@ const RestaurantMenuPage = () => {
               <div className="flex items-center space-x-8 animate-slide">
                 <Percent className="h-5 w-5 flex-shrink-0" />
                 <div className="flex space-x-8">
-                  {restaurant.offers.map((offer, index) => (
+                  {restaurants.offers.map((offer, index) => (
                     <span key={index} className="font-semibold whitespace-nowrap">
                       🎉 {offer.title}
                     </span>

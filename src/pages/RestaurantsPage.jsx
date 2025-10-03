@@ -35,13 +35,16 @@ import {
 import Navbar from '../components/home/Navbar';
 import Footer from '../components/home/Footer';
 import useAuthStore from '../store/useAuthStore';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNearByRestaurants } from '../api/homeApi';
 import { useNavigate } from 'react-router-dom';
 import CartButton from '../components/home/CartButton';
+import { getCustomerProfile, updateFavourites } from '../api/customerApi';
+import toast from 'react-hot-toast';
 
 const RestaurantsPage = () => {
-  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
 
   const [allRestaurants, setAllRestaurants] = useState({});
@@ -53,6 +56,17 @@ const RestaurantsPage = () => {
     },
     onError: (error) => {
         toast.error(error.response.data?.message);
+    }
+  });
+  const handleUpdateFavouriteMutation = useMutation({
+    mutationFn: updateFavourites,
+    onSuccess: async (data) => {
+      toast.success(data.message);
+      setUser(await getCustomerProfile(), "Customer");
+      queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+    },
+    onError: (error) => {
+      toast.error(error.response.data?.message || "Something went wrong");
     }
   });
 
@@ -77,407 +91,6 @@ const RestaurantsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  // Mock restaurants data based on your schema
-  const restaurants = [
-    {
-      _id: '1',
-      restaurantName: 'The Spice Route',
-      ownerName: 'Rajesh Kumar',
-      description: 'Authentic North Indian cuisine with traditional flavors and modern presentation.',
-      bannerImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop',
-      cuisines: ['North Indian', 'Mughlai', 'Biryani'],
-      rating: 4.5,
-      phone: '+91 98765 43210',
-      email: 'spiceroute@gmail.com',
-      address: {
-        street: 'Sector 15, Main Market',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121007'
-      },
-      openingTime: '11:00',
-      closingTime: '23:00',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: true,
-      isPromoted: true,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1563379091339-03246963d51d?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '25-30 min',
-      distance: '1.2 km',
-      totalOrders: 2847,
-      offers: ['50% OFF up to ₹100', 'Free Delivery']
-    },
-    {
-      _id: '2',
-      restaurantName: 'Pizza Palace',
-      ownerName: 'Marco Rossi',
-      description: 'Wood-fired authentic Italian pizzas with fresh ingredients and traditional recipes.',
-      bannerImage: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop',
-      cuisines: ['Italian', 'Pizza', 'Continental'],
-      rating: 4.7,
-      phone: '+91 98765 43211',
-      email: 'pizzapalace@gmail.com',
-      address: {
-        street: 'Sector 21, Crown Plaza',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121001'
-      },
-      openingTime: '12:00',
-      closingTime: '24:00',
-      pureVeg: true,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: true,
-      fastDelivery: false,
-      images: [
-        'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹₹',
-      deliveryTime: '30-35 min',
-      distance: '2.1 km',
-      totalOrders: 3241,
-      offers: ['40% OFF + Free Delivery', 'Buy 1 Get 1 Free']
-    },
-    {
-      _id: '3',
-      restaurantName: 'Burger Junction',
-      ownerName: 'Mike Johnson',
-      description: 'Gourmet burgers made with premium ingredients and served with crispy fries.',
-      bannerImage: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=500&h=300&fit=crop',
-      cuisines: ['American', 'Fast Food', 'Burgers'],
-      rating: 4.3,
-      phone: '+91 98765 43212',
-      email: 'burgerjunction@gmail.com',
-      address: {
-        street: 'Sector 12, Food Court',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121003'
-      },
-      openingTime: '10:00',
-      closingTime: '22:00',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: true,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '20-25 min',
-      distance: '0.8 km',
-      totalOrders: 1456,
-      offers: ['₹125 OFF above ₹249']
-    },
-    {
-      _id: '4',
-      restaurantName: 'Sushi Zen',
-      ownerName: 'Akiko Tanaka',
-      description: 'Premium Japanese cuisine with fresh sashimi and authentic sushi preparations.',
-      bannerImage: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=500&h=300&fit=crop',
-      cuisines: ['Japanese', 'Sushi', 'Asian'],
-      rating: 4.6,
-      phone: '+91 98765 43213',
-      email: 'sushizen@gmail.com',
-      address: {
-        street: 'Sector 18, Omaxe Mall',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121002'
-      },
-      openingTime: '18:00',
-      closingTime: '23:30',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: false,
-      images: [
-        'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹₹₹',
-      deliveryTime: '40-45 min',
-      distance: '3.5 km',
-      totalOrders: 987,
-      offers: ['Premium Exclusive Menu']
-    },
-    {
-      _id: '5',
-      restaurantName: 'Taco Fiesta',
-      ownerName: 'Carlos Rodriguez',
-      description: 'Vibrant Mexican flavors with authentic tacos, burritos and nachos.',
-      bannerImage: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=500&h=300&fit=crop',
-      cuisines: ['Mexican', 'Tex-Mex', 'Latin American'],
-      rating: 4.4,
-      phone: '+91 98765 43214',
-      email: 'tacofiesta@gmail.com',
-      address: {
-        street: 'Sector 16, Central Market',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121008'
-      },
-      openingTime: '11:30',
-      closingTime: '22:30',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: true,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '35-40 min',
-      distance: '1.9 km',
-      totalOrders: 1876,
-      offers: ['Buy 2 Get 1 Free', '30% OFF on Combos']
-    },
-    {
-      _id: '6',
-      restaurantName: 'Green Bowl',
-      ownerName: 'Priya Sharma',
-      description: 'Healthy salads, smoothie bowls and organic meals for conscious eaters.',
-      bannerImage: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=500&h=300&fit=crop',
-      cuisines: ['Healthy', 'Salads', 'Organic'],
-      rating: 4.2,
-      phone: '+91 98765 43215',
-      email: 'greenbowl@gmail.com',
-      address: {
-        street: 'Sector 14, Health Plaza',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121004'
-      },
-      openingTime: '08:00',
-      closingTime: '21:00',
-      pureVeg: true,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '25-30 min',
-      distance: '1.7 km',
-      totalOrders: 654,
-      offers: ['30% OFF on Healthy Food']
-    },
-    {
-      _id: '7',
-      restaurantName: 'Biryani Express',
-      ownerName: 'Ahmed Hassan',
-      description: 'Authentic Hyderabadi biryani with aromatic basmati rice and tender meat.',
-      bannerImage: 'https://images.unsplash.com/photo-1563379091339-03246963d51d?w=500&h=300&fit=crop',
-      cuisines: ['Biryani', 'Hyderabadi', 'Mughlai'],
-      rating: 4.8,
-      phone: '+91 98765 43216',
-      email: 'biryaniexpress@gmail.com',
-      address: {
-        street: 'Sector 19, Old City',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121009'
-      },
-      openingTime: '12:00',
-      closingTime: '23:00',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: true,
-      isPromoted: true,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1563379091339-03246963d51d?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '30-35 min',
-      distance: '2.3 km',
-      totalOrders: 4532,
-      offers: ['Free Raita with Biryani', '20% OFF above ₹399']
-    },
-    {
-      _id: '8',
-      restaurantName: 'Dessert Dreams',
-      ownerName: 'Sophie Laurent',
-      description: 'Artisan desserts, ice creams and pastries crafted with love and premium ingredients.',
-      bannerImage: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=500&h=300&fit=crop',
-      cuisines: ['Desserts', 'Ice Cream', 'Bakery'],
-      rating: 4.5,
-      phone: '+91 98765 43217',
-      email: 'dessertdreams@gmail.com',
-      address: {
-        street: 'Sector 11, Sweet Street',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121005'
-      },
-      openingTime: '10:00',
-      closingTime: '22:30',
-      pureVeg: true,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '20-25 min',
-      distance: '1.4 km',
-      totalOrders: 892,
-      offers: ['25% OFF on Orders Above ₹199']
-    },
-    {
-      _id: '9',
-      restaurantName: 'Café Mocha',
-      ownerName: 'David Brown',
-      description: 'Premium coffee, artisan sandwiches and cozy atmosphere for coffee lovers.',
-      bannerImage: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=500&h=300&fit=crop',
-      cuisines: ['Coffee', 'Café', 'Snacks'],
-      rating: 4.1,
-      phone: '+91 98765 43218',
-      email: 'cafemocha@gmail.com',
-      address: {
-        street: 'Sector 10, Coffee Lane',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121006'
-      },
-      openingTime: '07:00',
-      closingTime: '23:00',
-      pureVeg: true,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹',
-      deliveryTime: '15-20 min',
-      distance: '0.9 km',
-      totalOrders: 567,
-      offers: ['Flat ₹50 OFF on Beverages']
-    },
-    {
-      _id: '10',
-      restaurantName: 'Thai Garden',
-      ownerName: 'Siriporn Thani',
-      description: 'Authentic Thai cuisine with traditional curries, noodles and aromatic herbs.',
-      bannerImage: 'https://images.unsplash.com/photo-1559847844-d721426d6edc?w=500&h=300&fit=crop',
-      cuisines: ['Thai', 'Asian', 'Curry'],
-      rating: 4.4,
-      phone: '+91 98765 43219',
-      email: 'thaigarden@gmail.com',
-      address: {
-        street: 'Sector 20, Asia Plaza',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121010'
-      },
-      openingTime: '12:00',
-      closingTime: '22:00',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: false,
-      images: [
-        'https://images.unsplash.com/photo-1559847844-d721426d6edc?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹₹',
-      deliveryTime: '35-40 min',
-      distance: '2.8 km',
-      totalOrders: 1234,
-      offers: ['Authentic Thai at 20% OFF']
-    },
-    {
-      _id: '11',
-      restaurantName: 'Street Food Hub',
-      ownerName: 'Ramesh Gupta',
-      description: 'Delicious Indian street food with authentic flavors and hygenic preparation.',
-      bannerImage: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&h=300&fit=crop',
-      cuisines: ['Street Food', 'Chaat', 'Indian'],
-      rating: 4.3,
-      phone: '+91 98765 43220',
-      email: 'streetfoodhub@gmail.com',
-      address: {
-        street: 'Sector 13, Street Food Corner',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121011'
-      },
-      openingTime: '16:00',
-      closingTime: '24:00',
-      pureVeg: true,
-      isOpen: true,
-      isVerified: true,
-      isTrending: true,
-      isPromoted: false,
-      fastDelivery: true,
-      images: [
-        'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹',
-      deliveryTime: '25-30 min',
-      distance: '1.6 km',
-      totalOrders: 2156,
-      offers: ['Combo Deals Starting ₹99']
-    },
-    {
-      _id: '12',
-      restaurantName: 'Ocean Delights',
-      ownerName: 'Captain Robert',
-      description: 'Fresh seafood and continental dishes with ocean-to-table freshness.',
-      bannerImage: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=500&h=300&fit=crop',
-      cuisines: ['Seafood', 'Continental', 'Fish'],
-      rating: 4.6,
-      phone: '+91 98765 43221',
-      email: 'oceandelights@gmail.com',
-      address: {
-        street: 'Sector 22, Marine Drive',
-        city: 'Faridabad',
-        state: 'Haryana',
-        pincode: '121012'
-      },
-      openingTime: '18:00',
-      closingTime: '23:30',
-      pureVeg: false,
-      isOpen: true,
-      isVerified: true,
-      isTrending: false,
-      isPromoted: false,
-      fastDelivery: false,
-      images: [
-        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=300&h=200&fit=crop'
-      ],
-      priceRange: '₹₹₹',
-      deliveryTime: '45-50 min',
-      distance: '3.2 km',
-      totalOrders: 1789,
-      offers: ['Fresh Catch of the Day']
-    }
-  ];
 
   const cuisineTypes = ['North Indian', 'South Indian', 'Chinese', 'Italian', 'Mexican', 'Japanese', 'Thai', 'Continental', 'Fast Food', 'Desserts', 'Beverages'];
   
@@ -576,6 +189,10 @@ const RestaurantsPage = () => {
     setSearchQuery('');
   };
 
+  const handleUpdateFavourite = (id) => {
+    handleUpdateFavouriteMutation.mutate(id);
+  }
+
   useEffect(() => {
     getRestaurantsMutation.mutate({ user, distance: 40000 });
   }, []);
@@ -658,7 +275,7 @@ const RestaurantsPage = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
               <span className="text-lg font-semibold text-gray-800">
-                {sortedRestaurants.length} restaurants found
+                No. of Restaurants: {sortedRestaurants.length}
               </span>
               
               {/* Active Filters Display */}
@@ -835,7 +452,6 @@ const RestaurantsPage = () => {
           {paginatedRestaurants.map((restaurant) => (
             <div 
               key={restaurant._id}
-              onClick={() => navigate(`/restaurant/${restaurant._id}`)}
               className={`bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer group ${
                 viewMode === 'list' ? 'flex' : ''
               }`}
@@ -887,14 +503,11 @@ const RestaurantsPage = () => {
                 {/* Heart/Favorite & Share */}
                 <div className="absolute top-4 right-4 flex gap-2">
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(restaurant._id);
-                    }}
-                    className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 group/heart"
+                    onClick={() => handleUpdateFavourite(restaurant._id)}
+                    className="w-10 h-10 bg-white/90 cursor-pointer backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 group/heart"
                   >
                     <Heart 
-                      className={`h-5 w-5 ${favorites.has(restaurant._id) 
+                      className={`h-5 w-5 ${user?.profile?.favourites?.includes(restaurant._id) 
                         ? 'text-red-500 fill-red-500' 
                         : 'text-gray-600 group-hover/heart:text-red-500'
                       } transition-all duration-300`} 
@@ -940,7 +553,10 @@ const RestaurantsPage = () => {
                 </div>
               </div>
 
-              <div className={`p-6 ${viewMode === 'list' ? 'flex-1 flex flex-col' : ''}`}>
+              <div
+                onClick={() => navigate(`/restaurant/${restaurant._id}`)}
+                className={`p-6 ${viewMode === 'list' ? 'flex-1 flex flex-col' : ''}`}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="text-xl font-bold flex items-center justify-start gap-2 text-gray-800 mb-1 group-hover:text-orange-600 transition-colors">
@@ -994,11 +610,11 @@ const RestaurantsPage = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
-                  <button className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+                  <button onClick={() => navigate(`/restaurant/${restaurant._id}`)} className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Order Now
                   </button>
-                  <button className="bg-gray-100 cursor-pointer hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center">
+                  <button onClick={() => navigate(`/restaurant/${restaurant._id}`)} className="bg-gray-100 cursor-pointer hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center">
                     <Eye className="h-4 w-4 mr-2" />
                     View Menu
                   </button>

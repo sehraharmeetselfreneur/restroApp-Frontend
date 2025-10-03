@@ -291,7 +291,7 @@ const Navbar = ({ location = "Faridabad, Haryana" }) => {
                                                 <div className="border-t border-gray-100 py-1">
                                                     <button
                                                         onClick={handleLogout}
-                                                        className="flex items-center space-x-3 w-full px-4 py-3 hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
+                                                        className="flex cursor-pointer items-center space-x-3 w-full px-4 py-3 hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
                                                     >
                                                         <LogOut className="h-4 w-4" />
                                                         <span className="text-sm">Logout</span>

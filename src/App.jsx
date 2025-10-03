@@ -132,7 +132,7 @@ const App = () => {
 
                 {/* Dasboard Pages */}
                 <Route path="/restaurant/dashboard" element={(user && role === "Restaurant") ? <RestaurantDashboardPage /> : <Navigate to={"/restaurant/login"} />} />
-                <Route path="/admin" element={user === null ? <AdminLoginPage /> : role === "Admin" ? <AdminDashboardPage /> : <AdminLoginPage />} />
+                <Route path="/admin" element={user === null ? <HomePage /> : role === "Admin" ? <AdminDashboardPage /> : <AdminLoginPage />} />
             </Routes>
         </div>
     )

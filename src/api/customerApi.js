@@ -86,3 +86,14 @@ export const deleteAddress = async ({ tag }) => {
         throw err;
     }
 }
+
+export const updateFavourites = async (id) => {
+    try{
+        const res = await axiosInstance.post(`/customer/favourites/${id}`);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in updateFavourites: ", err);
+        throw err;
+    }
+}

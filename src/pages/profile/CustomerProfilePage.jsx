@@ -34,16 +34,20 @@ import {
   Navigation,
   Home,
   Building,
-  Coffee
+  Coffee,
+  ShoppingBag
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { addAddress, deleteAddress, getCustomerProfile, updateCustomerProfile } from '../../api/customerApi';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/home/Navbar';
 
 const CustomerProfilePage = () => {
     const { user, setUser } = useAuthStore();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('overview');
     const [isEditing, setIsEditing] = useState(false);
@@ -161,12 +165,7 @@ const CustomerProfilePage = () => {
       }
     ];
 
-    const favoriteRestaurants = [
-      { id: 1, name: 'The Spice Route', cuisine: 'North Indian', rating: 4.5, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop' },
-      { id: 2, name: 'Pizza Palace', cuisine: 'Italian', rating: 4.7, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100&h=100&fit=crop' },
-      { id: 3, name: 'Sushi Zen', cuisine: 'Japanese', rating: 4.6, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=100&h=100&fit=crop' },
-      { id: 4, name: 'Taco Fiesta', cuisine: 'Mexican', rating: 4.4, image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=100&h=100&fit=crop' }
-    ];
+    const favoriteRestaurants = user?.favourites?.favourites || [];
 
     const achievements = [
       { icon: Award, title: 'Foodie Explorer', description: 'Ordered from 50+ restaurants', color: 'from-yellow-400 to-orange-500' },
@@ -183,10 +182,6 @@ const CustomerProfilePage = () => {
       { id: 'wallet', label: 'Wallet', icon: Wallet },
       { id: 'settings', label: 'Settings', icon: Settings }
     ];
-
-    const handleSaveProfile = () => {
-      setIsEditing(false);
-    };
 
     const handleAddAddress = () => {
       addAddressMutation.mutate(newAddress);
@@ -212,6 +207,9 @@ const CustomerProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      {/* Navbar */}
+      <Navbar />
+
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
@@ -309,7 +307,7 @@ const CustomerProfilePage = () => {
           </div>
 
           {/* Main Content Area */}
-          <div className="lg:col-span-3 mt-10">
+          <div className="lg:col-span-3 mt-12">
             <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
               {/* Tab Content */}
               {activeTab === 'overview' && (
@@ -380,51 +378,78 @@ const CustomerProfilePage = () => {
                   </div>
 
                   <div className="space-y-6">
-                    {user.orders.map((order) => (
-                      <div key={order._id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group">
-                        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                          <img 
-                            src={import.meta.env.VITE_BACKEND_URL + order.restaurant_id.bannerImage} 
-                            alt={order.restaurant || "OrderImage"}
-                            className="w-25 h-25 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="flex-1">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                              <div>
-                                <h3 className="text-xl font-bold text-gray-800 mb-1">{order.restaurant_id.restaurantName}</h3>
-                                <p className="text-gray-600 mb-2">Items: {order.items.length}</p>
-                                <p>{order.items.map((item) => (item.foodItem.name + ", "))}</p>
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <div className="flex items-center space-x-1">
-                                    <Timer className="h-4 w-4" />
-                                    <span>{order.createdAt.split("T")[0]}</span>
+                    {user.orders.length === 0 ? (
+                      <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-10 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+                          <ShoppingBag className="h-10 w-10 text-orange-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">No Orders Yet</h2>
+                        <p className="text-gray-600 max-w-xl mb-6">
+                          You haven’t placed any orders yet. Once you order from your favourite restaurants, 
+                          they’ll show up here so you can easily track and reorder them.
+                        </p>
+                        <button 
+                          onClick={() => navigate("/restaurants")}
+                          className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                        >
+                          Explore Restaurants
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {user.orders.map((order) => (
+                          <div 
+                            key={order._id} 
+                            className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group"
+                          >
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                              <img 
+                                src={import.meta.env.VITE_BACKEND_URL + order.restaurant_id.bannerImage} 
+                                alt={order.restaurant_id.restaurantName || "OrderImage"}
+                                className="w-25 h-25 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                              <div className="flex-1">
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                  <div>
+                                    <h3 className="text-xl font-bold text-gray-800 mb-1">{order.restaurant_id.restaurantName}</h3>
+                                    <p className="text-gray-600 mb-2">Items: {order.items.length}</p>
+                                    <p>{order.items.map((item) => (item.foodItem.name)).join(", ")}</p>
+                                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                      <div className="flex items-center space-x-1">
+                                        <Timer className="h-4 w-4" />
+                                        <span>{order.createdAt.split("T")[0]}</span>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <Wallet className="h-4 w-4" />
+                                        <span>₹{order.totalAmount}</span>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Wallet className="h-4 w-4" />
-                                    <span>₹{order.totalAmount}</span>
+                                  <div className="flex flex-col lg:items-end gap-3">
+                                    <div className="flex items-center space-x-1">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          className={`h-4 w-4 ${i < order.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                                        />
+                                      ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg font-medium text-sm hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                                        Reorder
+                                      </button>
+                                      <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300">
+                                        View Details
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                              <div className="flex flex-col lg:items-end gap-3">
-                                <div className="flex items-center space-x-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star key={i} className={`h-4 w-4 ${i < order.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                                  ))}
-                                </div>
-                                <div className="flex gap-2">
-                                  <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg font-medium text-sm hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                                    Reorder
-                                  </button>
-                                  <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300">
-                                    View Details
-                                  </button>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}
@@ -436,32 +461,62 @@ const CustomerProfilePage = () => {
                     <span className="text-sm text-gray-600">{favoriteRestaurants.length} restaurants</span>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    {favoriteRestaurants.map((restaurant) => (
-                      <div key={restaurant.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group border border-gray-100">
-                        <div className="flex items-center space-x-4 mb-4">
-                          <img 
-                            src={restaurant.image} 
-                            alt={restaurant.name}
-                            className="w-16 h-16 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-800">{restaurant.name}</h3>
-                            <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine}</p>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                              <span className="text-sm font-semibold text-gray-700">{restaurant.rating}</span>
-                            </div>
-                          </div>
-                          <button className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                            <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-                          </button>
+                  <div className="space-y-6">
+                    {favoriteRestaurants.length === 0 ? (
+                      <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-10 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                          <Heart className="h-10 w-10 text-red-500" />
                         </div>
-                        <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                          Order Now
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">No Favourites Yet</h2>
+                        <p className="text-gray-600 max-w-md mb-6">
+                          You haven’t added any restaurants to your favourites list. 
+                          Tap the <Heart className="inline-block h-4 w-4 text-red-500 fill-red-500" /> icon on a restaurant 
+                          to save it here for quick access.
+                        </p>
+                        <button 
+                          onClick={() => navigate("/restaurants")}
+                          className="px-6 py-3 cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                        >
+                          Explore Restaurants
                         </button>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        {favoriteRestaurants.map((restaurant) => (
+                          <div 
+                            key={restaurant._id} 
+                            className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group border border-gray-100"
+                          >
+                            <div className="flex items-center space-x-4 mb-4">
+                              <img 
+                                src={import.meta.env.VITE_BACKEND_URL + restaurant.bannerImage} 
+                                alt={restaurant.restaurantName}
+                                className="w-16 h-16 rounded-xl object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-gray-800">{restaurant.restaurantName}</h3>
+                                <p className="text-gray-600 text-sm mb-2">
+                                  {restaurant.cuisines?.[0]}{restaurant.cuisines?.[1] ? `, ${restaurant.cuisines[1]}` : ""}
+                                </p>
+                                <div className="flex items-center space-x-1">
+                                  <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                                  <span className="text-sm font-semibold text-gray-700">{restaurant.rating}</span>
+                                </div>
+                              </div>
+                              <button className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                                <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => navigate(`/restaurant/${restaurant._id}`)} 
+                              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                            >
+                              Order Now
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
