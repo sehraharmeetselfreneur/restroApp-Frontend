@@ -65,10 +65,9 @@ const RestaurantMenuPage = () => {
     });
     const addToCartMutation = useMutation({
         mutationFn: addToCartApi,
-        onSuccess: async (data) => {
+        onSuccess: async () => {
             setUser(await getCustomerProfile(), "Customer");
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
-            toast.success(data.message);
         },
         onError: (error) => {
             toast.error(error.response.data?.message || "Something went wrong");
@@ -76,10 +75,9 @@ const RestaurantMenuPage = () => {
     });
     const removeFromCartMutation = useMutation({
         mutationFn: removeFromCartApi,
-        onSuccess: async (data) => {
+        onSuccess: async () => {
             setUser(await getCustomerProfile(), "Customer");
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
-            toast.success(data.message);
         },
         onError: (error) => {
             toast.error(error.response.data?.message || "Something went wrong");
@@ -238,17 +236,16 @@ const RestaurantMenuPage = () => {
           
           {/* Floating Action Buttons */}
           <div className="absolute top-6 right-6 flex gap-3">
-            <button 
-              onClick={() => handleUpdateFavourites(restaurants._id)}
-              className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300"
-            >
-              <Heart className={`h-6 w-6 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'} transition-colors duration-300`} />
-            </button>
+            {user && 
+              <button 
+                onClick={() => handleUpdateFavourites(restaurants._id)}
+                className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300"
+              >
+                <Heart className={`h-6 w-6 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'} transition-colors duration-300`} />
+              </button>
+            }
             <button className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300">
               <Share2 className="h-5 w-5 text-gray-600" />
-            </button>
-            <button className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300">
-              <Camera className="h-5 w-5 text-gray-600" />
             </button>
           </div>
 

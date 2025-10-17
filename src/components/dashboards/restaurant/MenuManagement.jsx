@@ -608,7 +608,7 @@ const MenuManagement = () => {
                 
                 {showAddModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200">
-                        <div className="bg-white rounded-3xl max-w-6xl w-full shadow-2xl overflow-hidden transform transition-all duration-300 scale-100 opacity-100 max-h-[95vh] overflow-y-auto">
+                        <div className="bg-white rounded-3xl no-scrollbar max-w-6xl w-full shadow-2xl overflow-hidden transform transition-all duration-300 scale-100 opacity-100 max-h-[95vh] overflow-y-auto">
                             <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50">
                                 <div className="flex items-center justify-between">
                                     <div>

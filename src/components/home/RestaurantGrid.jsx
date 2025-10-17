@@ -467,7 +467,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                   </div>
                 
                   {/* Heart/Favorite */}
-                  <button 
+                  {user && <button 
                     onClick={() => handleUpdateFavourites(restaurant._id)}
                     className="absolute z-100 cursor-pointer top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all duration-300 group/heart"
                   >
@@ -477,7 +477,7 @@ const RestaurantGrid = ({ location = "Delhi" }) => {
                         : 'text-gray-600 group-hover/heart:text-red-500'
                       } transition-all duration-300`}
                     />
-                  </button>
+                  </button>}
                   
                   {/* Time and Distance */}
                   <div className="absolute bottom-3 right-3 flex gap-2">

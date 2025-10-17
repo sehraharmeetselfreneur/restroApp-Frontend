@@ -42,7 +42,7 @@ const CustomToaster = () => {
                         primary: 'white',
                         secondary: 'green',
                     },
-                    duration: 2500,
+                    duration: 1500,
                 },
 
                 error: {

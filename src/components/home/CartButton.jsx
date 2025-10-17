@@ -7,10 +7,7 @@ const CartButton = () => {
     const { user, role } = useAuthStore();
     const navigate = useNavigate();
 
-    let totalItems = 0;
-    useEffect(() => {
-      totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0)
-    }, [user?.cart]);
+    const totalItems = user?.cart?.items?.reduce((sum, item) => sum+=item.quantity, 0)
 
     return (
         <div>

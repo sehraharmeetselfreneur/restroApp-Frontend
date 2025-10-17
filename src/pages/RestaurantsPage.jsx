@@ -502,7 +502,7 @@ const RestaurantsPage = () => {
                 
                 {/* Heart/Favorite & Share */}
                 <div className="absolute top-4 right-4 flex gap-2">
-                  <button 
+                  {user && <button 
                     onClick={() => handleUpdateFavourite(restaurant._id)}
                     className="w-10 h-10 bg-white/90 cursor-pointer backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 group/heart"
                   >
@@ -512,7 +512,7 @@ const RestaurantsPage = () => {
                         : 'text-gray-600 group-hover/heart:text-red-500'
                       } transition-all duration-300`} 
                     />
-                  </button>
+                  </button>}
                   <button className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300">
                     <Share2 className="h-4 w-4 text-gray-600" />
                   </button>

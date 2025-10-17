@@ -4,6 +4,7 @@ import useAuthStore from "../../../store/useAuthStore";
 
 const Analytics = ({ dashboardStats, trendingItems }) => {
     const { user } = useAuthStore();
+    const totalOrders = user?.orders?.length || 0;
 
     return (
         <div className="space-y-6">
@@ -24,7 +25,7 @@ const Analytics = ({ dashboardStats, trendingItems }) => {
                         <div className="p-3 bg-blue-500 rounded-xl inline-block mb-4">
                             <Package size={24} className="text-white" />
                         </div>
-                        <p className="text-2xl font-bold text-blue-700">{dashboardStats.totalOrders}</p>
+                        <p className="text-2xl font-bold text-blue-700">{totalOrders}</p>
                         <p className="text-sm text-blue-600 font-medium">Total Orders</p>
                     </div>
 

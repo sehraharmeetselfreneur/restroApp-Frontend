@@ -42,8 +42,7 @@ const Navbar = ({ location = "Faridabad, Haryana" }) => {
 
     const customerLogoutMutation = useMutation({
         mutationFn: logoutCustomer,
-        onSuccess: (data) => {
-            toast.success(data.message);
+        onSuccess: () => {
             clearUser();
             queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
         },
@@ -76,7 +75,7 @@ const Navbar = ({ location = "Faridabad, Haryana" }) => {
 
     const profileMenuItems = [
         { name: 'My Profile', icon: User, url: '/profile' },
-        { name: 'My Orders', icon: Clock, url: '/orders' },
+        { name: 'My Orders', icon: Clock, url: '/track-order' },
         { name: 'Favorites', icon: Heart, url: '/favorites' },
         { name: 'Wallet', icon: Wallet, url: '/wallet' },
         { name: 'Settings', icon: Settings, url: '/settings' },

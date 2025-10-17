@@ -2,7 +2,7 @@ import { Activity, DollarSign, Package, ShoppingBag, Star, Target, TrendingUp } 
 import useAuthStore from "../../../store/useAuthStore";
 import VerificationBanner from "./VerificationBanner";
 
-const Overview = ({ recentOrders }) => {
+const Overview = ({ setActiveTab }) => {
     const { user } = useAuthStore();
 
     const todayOrders = user.orders.filter((order) => {
@@ -16,6 +16,8 @@ const Overview = ({ recentOrders }) => {
         return orderDay === todayDay;
     });
     console.log(todayOrders);
+
+    const recentOrders = user?.orders?.slice(-5) || [];
 
     const dashboardStats = {
         totalOrders: 1247,
@@ -97,7 +99,7 @@ const Overview = ({ recentOrders }) => {
                         </div>
                     </div>
                     
-                    // Main Dashboard Grid
+                    {/* Main Dashboard Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Recent Orders */}
                         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -111,37 +113,37 @@ const Overview = ({ recentOrders }) => {
                                         <p className="text-sm text-gray-500">Latest incoming orders</p>
                                     </div>
                                 </div>
-                                <button className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
+                                <button onClick={() => setActiveTab('orders')} className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
                                     View All
                                 </button>
                             </div>
                             
                             <div className="space-y-4">
                                 {recentOrders.map((order) => (
-                                    <div key={order.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                                    <div key={order._id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-xl ${order.color} text-white shadow-sm`}>
+                                                <div className={`p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm`}>
                                                     <ShoppingBag size={16} />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="font-bold text-gray-800">#{order.id}</p>
+                                                        <p className="font-bold text-gray-800">#{order._id}</p>
                                                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                            order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' :
-                                                            order.status === 'Ready' ? 'bg-green-100 text-green-700' :
+                                                            order.orderStatus === 'preparing' || order.orderStatus === 'pending' ? 'bg-orange-100 text-orange-700' :
+                                                            order.orderStatus === 'ready' ? 'bg-green-100 text-green-700' :
                                                             'bg-blue-100 text-blue-700'
                                                         }`}>
-                                                            {order.status}
+                                                            {order.orderStatus.toUpperCase()[0] + order.orderStatus.slice(1)}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600">{order.customerName}</p>
-                                                    <p className="text-sm font-medium text-gray-800">₹{order.price} • {order.items} items</p>
+                                                    <p className="text-sm text-gray-600">{order.customer_id.customerName}</p>
+                                                    <p className="text-sm font-medium text-gray-800">₹{order.totalAmount} • {order.items.reduce((sum, item) => sum += item.quantity, 0)} items</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm font-medium text-gray-800">{order.eta}</p>
-                                                <p className="text-xs text-gray-500">{order.time}</p>
+                                                <p className="text-sm font-medium text-gray-800">{order.distance} Km</p>
+                                                <p className="text-xs text-gray-500">{order.preparationTime || 20} Mins</p>
                                             </div>
                                         </div>
                                     </div>

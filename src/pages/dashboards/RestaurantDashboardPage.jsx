@@ -77,24 +77,6 @@ const RestaurantDashboardPage = () => {
         { name: "Chocolate Brownie", orders: 22, revenue: 1540, trend: "+22%" }
     ];
 
-    const recentOrders = [
-        {
-            id: '1012', customerName: 'Rahul Sharma', items: 2, price: 550,
-            eta: '15 min', distance: '1.2 km', status: 'Preparing',
-            color: 'bg-gradient-to-r from-orange-500 to-red-500', time: '2 min ago'
-        },
-        {
-            id: '1011', customerName: 'Priya Singh', items: 4, price: 820,
-            eta: '20 min', distance: '2.5 km', status: 'Confirmed',
-            color: 'bg-gradient-to-r from-blue-500 to-cyan-500', time: '5 min ago'
-        },
-        {
-            id: '1010', customerName: 'Amit Kumar', items: 1, price: 240,
-            eta: '10 min', distance: '0.8 km', status: 'Ready',
-            color: 'bg-gradient-to-r from-green-500 to-emerald-500', time: '8 min ago'
-        }
-    ];
-
     const menuItems = [
         {
             id: 1, name: "Margherita Pizza", category: "Pizza", price: 299,
@@ -253,9 +235,9 @@ const RestaurantDashboardPage = () => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'overview': return <Overview recentOrders={recentOrders} />;
+            case 'overview': return <Overview setActiveTab={setActiveTab} />;
             case 'menu': return <MenuManagement />;
-            case 'orders': return <Orders recentOrders={recentOrders} />;
+            case 'orders': return <Orders />;
             case 'analytics': return <Analytics dashboardStats={dashboardStats} trendingItems={trendingItems} />;
             case 'info': return <RestaurantInfo />;
             case 'bank': return <BankDetails />;

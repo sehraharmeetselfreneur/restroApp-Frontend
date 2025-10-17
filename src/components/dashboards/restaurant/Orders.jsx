@@ -2,7 +2,7 @@ import { Clock, MapPin, Package, ShoppingBag } from "lucide-react";
 import useAuthStore from "../../../store/useAuthStore";
 import VerificationBanner from "./VerificationBanner";
 
-const Orders = ({ recentOrders }) => {
+const Orders = () => {
     const { user } = useAuthStore();
     const orders = user.orders;
 

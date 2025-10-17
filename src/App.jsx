@@ -33,6 +33,8 @@ import RestaurantMenuPage from "./pages/RestaurantMenuPage";
 import CartPage from "./pages/CartPage";
 import OrderPage from "./pages/OrderPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
+import SearchPage from "./pages/SearchPage";
+import PaymentPage from "./pages/PaymentPage";
 
 const App = () => {
     const { user, role, setUser, clearUser } = useAuthStore();
@@ -125,7 +127,9 @@ const App = () => {
                 <Route path="/profile" element={user === null ? <Navigate to={"/"} /> : role === "Customer" ? <CustomerProfilePage /> : role === "Restaurant" ? <RestaurantDashboardPage /> : role === "Admin" ? <AdminDashboardPage /> : <Navigate to={"/"} />} />
                 <Route path="/cart" element={!user ? <CustomerLoginPage /> : role === "Customer" ||  role === "Admin" || role === "SuperAdmin" ? <CartPage /> : <Navigate to={"/customer/login"} />} />
                 <Route path="/order" element={!user || !user.cart?.items?.length || role !== "Customer" ? <HomePage /> : <OrderPage />} />
+                <Route path="/payment" element={<PaymentPage />} />
                 <Route path="/track-order" element={!user ? <Navigate to={"/"} /> : role === "Customer" || role === "Admin" || role === "SuperAdmin" ? <TrackOrderPage /> : <Navigate to={"/"} />} />
+                <Route path="/search" element={<SearchPage />} />
 
                 <Route path="/restaurants" element={!user ? <RestaurantsPage /> : role === "Customer" || role === "Admin" || role === "SuperAdmin" ? <RestaurantsPage /> : role === "Restaurant" ? <Navigate to="/restaurant/dashboard" /> : <Navigate to="/" />} />
                 <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
