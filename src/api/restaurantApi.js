@@ -181,3 +181,25 @@ export const updateRestaurantAvailability = async () => {
         throw err;
     }
 }
+
+export const acceptOrder = async (orderId) => {
+    try{
+        console.log(orderId);
+        const res = await axiosInstance.put(`/order/${orderId}/status`, { orderId: orderId, status: "preparing" });
+        return res.data;
+    }
+    catch(err){
+        throw err;
+    }
+}
+
+export const updateOutForDelivery = async (orderId) => {
+    try{
+        const res = await axiosInstance.put(`/order/${orderId}/status`, { orderId: orderId, status: "outForDelivery" });
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in updateOutForDelivery: ", err);
+        throw err;
+    }
+}

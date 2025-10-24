@@ -9,7 +9,8 @@ import {
   User, ChevronDown, TrendingUp, Eye, ShoppingBag, Calendar,
   Plus, Edit2, Trash2, Search, Filter, Grid, List, Award,
   Users, Target, BarChart3, PieChart, Activity, Bell,
-  ChefHat, Coffee, Salad, Pizza, CakeSlice, Beef
+  ChefHat, Coffee, Salad, Pizza, CakeSlice, Beef,
+  TicketPercent
 } from "lucide-react";
 import { TbLogout } from "react-icons/tb";
 import toast from 'react-hot-toast';
@@ -26,6 +27,7 @@ import RestaurantInfo from '../../components/dashboards/restaurant/RestaurantInf
 import BankDetails from '../../components/dashboards/restaurant/BankDetails';
 import Documents from '../../components/dashboards/restaurant/Documents';
 import SettingsComponent from '../../components/dashboards/restaurant/SettingsComponent';
+import Offers from '../../components/dashboards/restaurant/Offers';
 
 const RestaurantDashboardPage = () => {
     const queryClient = useQueryClient();
@@ -104,6 +106,7 @@ const RestaurantDashboardPage = () => {
         { id: 'overview', label: 'Overview', icon: Home },
         { id: 'menu', label: 'Menu Management', icon: ChefHat },
         { id: 'orders', label: 'Orders', icon: Package },
+        { id: 'offers', label: 'Offers', icon: TicketPercent },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'info', label: 'Restaurant Info', icon: Utensils },
         { id: 'bank', label: 'Bank Details', icon: Banknote },
@@ -131,7 +134,7 @@ const RestaurantDashboardPage = () => {
     const ProfileModal = () => (
         showProfile && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+                <div className="bg-white no-scrollbar rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto">
                     <div className="p-6 border-b border-gray-200">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -160,7 +163,7 @@ const RestaurantDashboardPage = () => {
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Phone</label>
-                                <p className="text-lg font-bold text-gray-800 mt-1">{user?.profile?.phone}</p>
+                                <p className="text-lg font-bold text-gray-800 mt-1">{'+91 ' + user?.profile?.phone}</p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Rating</label>
@@ -238,6 +241,7 @@ const RestaurantDashboardPage = () => {
             case 'overview': return <Overview setActiveTab={setActiveTab} />;
             case 'menu': return <MenuManagement />;
             case 'orders': return <Orders />;
+            case 'offers': return <Offers />;
             case 'analytics': return <Analytics dashboardStats={dashboardStats} trendingItems={trendingItems} />;
             case 'info': return <RestaurantInfo />;
             case 'bank': return <BankDetails />;

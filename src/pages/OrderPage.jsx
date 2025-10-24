@@ -39,8 +39,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addAddress, getCustomerProfile } from '../api/customerApi';
 import Navbar from '../components/home/Navbar'
 import { createOrder } from '../api/orderApi';
+import { useNavigate } from 'react-router-dom';
 
 const OrderPage = () => {
+  const navigate = useNavigate();
   const { user, setUser } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -49,7 +51,6 @@ const OrderPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [upiId, setUpiId] = useState('');
   const [showQR, setShowQR] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [timer, setTimer] = useState(300); // 5 minutes for UPI
   const [cardDetails, setCardDetails] = useState({
@@ -85,7 +86,6 @@ const OrderPage = () => {
     }
   });
   const [useExistingAddress, setUseExistingAddress] = useState(true);
-
   const addAddressMutation = useMutation({
     mutationFn: addAddress,
     onSuccess: async (data) => {
@@ -107,13 +107,14 @@ const OrderPage = () => {
         toast.error(error.response.data?.message || "Something went wrong");
     }
   });
+  
   const placeOrderMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: async () => {
+        setPaymentSuccess(true);
         setUser(await getCustomerProfile(), "Customer");
         queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
-        setProcessing(false);
-        setPaymentSuccess(true);
+        toast.success("Order placed successfully");
     },
     onError: (error) => {
         toast.error(error.response.data?.message || "Something went wrong");
@@ -247,15 +248,12 @@ const OrderPage = () => {
 
     setCardDetails(prev => ({ ...prev, [name]: formattedValue }));
   };
-
-  const handlePayment = () => {
-    setProcessing(true);
+  const handlePayment = async (e) => {
+    e.preventDefault();
     if (!orderData.deliveryAddress.street || !orderData.paymentMethod) {
       toast.error('Please fill all required fields');
       return;
     }
-    console.log(orderData);
-    
     placeOrderMutation.mutate(orderData);
   };
 
@@ -300,50 +298,6 @@ const OrderPage = () => {
       color: 'from-green-500 to-emerald-500'
     }
   ];
-
-  if (paymentSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full text-center">
-          <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-            <CheckCircle className="h-12 w-12 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Your order has been confirmed and will be delivered soon.
-          </p>
-          <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-            <div className="grid grid-cols-2 gap-4 text-left">
-              <div>
-                <p className="text-sm text-gray-600">Order ID</p>
-                <p className="font-bold text-gray-800">{orderDetails.orderId}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Amount Paid</p>
-                <p className="font-bold text-green-600">₹{orderDetails.amount}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Payment Method</p>
-                <p className="font-bold text-gray-800 capitalize">{paymentMethod}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <p className="font-bold text-green-600">Confirmed</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <button className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              Track Order
-            </button>
-            <button className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-300">
-              Download Invoice
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -697,7 +651,7 @@ const OrderPage = () => {
 
                     {/* Payment Details */}
                     {paymentMethod && (
-                      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+                      <form onSubmit={handlePayment} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
                         {paymentMethod === 'card' && (
                           <div className="space-y-6">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">Enter Card Details</h3>
@@ -958,26 +912,25 @@ const OrderPage = () => {
                         )}
 
                         {/* Pay Button */}
-                        {paymentMethod && (
-                          <button
-                            onClick={handlePayment}
-                            disabled={processing || (paymentMethod === 'card' && (!cardDetails.cardNumber || !cardDetails.cardName || !cardDetails.expiryDate || !cardDetails.cvv))}
-                            className="w-full mt-5 cursor-pointer bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
-                          >
-                            {processing ? (
-                              <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-                                <span>Processing...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-5 w-5" />
-                                <span>Pay ₹{finalAmount.toFixed(2)}</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
+                        <button
+                          type='submit'
+                          disabled={placeOrderMutation.isPending || (paymentMethod === 'card' && (!cardDetails.cardNumber || !cardDetails.cardName || !cardDetails.expiryDate || !cardDetails.cvv))}
+                          hidden={!paymentMethod}
+                          className="w-full mt-5 cursor-pointer bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
+                        >
+                          {placeOrderMutation.isPending ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-5 w-5" />
+                              <span>Pay ₹{finalAmount.toFixed(2)}</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
                     )}
                   </div>
                 </div>
@@ -1025,6 +978,51 @@ const OrderPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Success Modal - Show when paymentSuccess is true */}
+      {paymentSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full text-center">
+            <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+              <CheckCircle className="h-12 w-12 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
+            <p className="text-xl text-gray-600 mb-8">
+              Your order has been confirmed and will be delivered soon.
+            </p>
+            <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+              <div className="grid grid-cols-2 gap-4 text-left">
+                <div>
+                  <p className="text-sm text-gray-600">Amount Paid</p>
+                  <p className="font-bold text-green-600">₹{finalAmount.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Payment Method</p>
+                  <p className="font-bold text-gray-800 capitalize">{paymentMethod}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="font-bold text-green-600">Confirmed</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => navigate('/orders')}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                Track Order
+              </button>
+              <button 
+                onClick={() => setPaymentSuccess(false)}
+                className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
