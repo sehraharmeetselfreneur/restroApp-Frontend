@@ -203,3 +203,14 @@ export const updateOutForDelivery = async (orderId) => {
         throw err;
     }
 }
+
+export const createOffer = async (offerData) => {
+    try{
+        const res = await axiosInstance.post('/offer/create', offerData);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in createOffer: ", err);
+        throw err;
+    }
+}
