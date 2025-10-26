@@ -538,7 +538,7 @@ const MenuManagement = () => {
                                     <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
                                       {item.category_id?.name}
                                     </span>
-                                    <span className="text-xs text-gray-500">{item.orders || 0} orders</span>
+                                    <span className="text-xs text-gray-500">{item.ordersCount || 0} orders</span>
                                   </div>
                                 </div>
                               </div>
@@ -580,7 +580,7 @@ const MenuManagement = () => {
                                             <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
                                                 {item.category_id.name}
                                             </span>
-                                            <span className="text-sm text-gray-500">{item.orders} orders</span>
+                                            <span className="text-sm text-gray-500">{item.ordersCount} orders</span>
                                         </div>
                                     </div>
                                 </div>

@@ -256,12 +256,26 @@ const OrderDetailsModal = ({ isOpen, onClose, order }) => {
     );
 };
 
-const Orders = () => {
+const Orders = ({ setActiveTab }) => {
     const { user } = useAuthStore();
     const orders = user.orders;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [filterStatus, setFilterStatus] = useState("All Orders");
+
+    const filteredOrders = orders.filter(order => {
+        if (filterStatus === "All Orders") return true;
+        return order.orderStatus === filterStatus;
+    });
+
+    const orderStatusLabels = {
+        pending: "Pending",
+        accepted: "Accepted",
+        preparing: "Preparing",
+        outForDelivery: "Out for Delivery",
+        delivered: "Delivered",
+    };
 
     const handleViewDetails = (order) => {
         setSelectedOrder(order);
@@ -283,13 +297,17 @@ const Orders = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <select className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>All Orders</option>
-                                <option>Pending</option>
-                                <option>Confirmed</option>
-                                <option>Preparing</option>
-                                <option>Ready</option>
-                                <option>Delivered</option>
+                            <select
+                              value={filterStatus}
+                              onChange={(e) => setFilterStatus(e.target.value)}
+                              className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option>All Orders</option>
+                              <option value="pending">Pending</option>
+                              <option value="accepted">Accepted</option>
+                              <option value="preparing">Preparing</option>
+                              <option value="outForDelivery">Out for Delivery</option>
+                              <option value="delivered">Delivered</option>
                             </select>
                             <button className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
                                 Export Orders
@@ -298,52 +316,77 @@ const Orders = () => {
                     </div>
                 
                     <div className="space-y-4">
-                        {orders.map((order) => (
-                            <div key={order._id} className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all">
-                                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm`}>
-                                            <ShoppingBag size={20} />
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <p className="text-lg font-bold text-gray-800">Order #{order._id}</p>
-                                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                                    order.orderStatus === 'preparing' ? 'bg-orange-100 text-orange-700' :
-                                                    order.orderStatus === 'outForDelivery' ? 'bg-green-100 text-green-700' :
-                                                    'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                    {order.orderStatus}
-                                                </span>
+                        {filteredOrders.length > 0 ? (
+                            filteredOrders.map((order) => (
+                                <div key={order._id} className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all">
+                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm">
+                                                <ShoppingBag size={20} />
                                             </div>
-                                            <p className="text-gray-600 font-medium">{order.customer_id.customerName}</p>
-                                            <p className="text-sm text-gray-500">{order.items.length} items • ₹{order.totalAmount} • </p>
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <p className="text-lg font-bold text-gray-800">Order #{order._id}</p>
+                                                    <span
+                                                        className={`px-3 py-1 text-sm font-medium rounded-full ${
+                                                            order.orderStatus === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                                            order.orderStatus === 'outForDelivery' ? 'bg-green-100 text-green-700' :
+                                                            order.orderStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                            order.orderStatus === 'accepted' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                        }`}
+                                                    >
+                                                        {orderStatusLabels[order.orderStatus] || order.orderStatus}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-600 font-medium">{order.customer_id.customerName}</p>
+                                                <p className="text-sm text-gray-500">{order.items.length} items • ₹{order.totalAmount} • </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                                            <div className="flex items-center gap-2">
+                                                <Clock size={16} />
+                                                <span>{user.profile.avgPrepTime || "30Mins"}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <MapPin size={16} />
+                                                <span>{(order.distance/1000).toFixed(2)} Km</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => handleViewDetails(order)}
+                                                className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium"
+                                            >
+                                                View Details
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-6 text-sm text-gray-500">
-                                        <div className="flex items-center gap-2">
-                                            <Clock size={16} />
-                                            <span>{user.profile.avgPrepTime || "30Mins"}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin size={16} />
-                                            <span>{order.distance}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => handleViewDetails(order)} className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium">
-                                            View Details
-                                        </button>
-                                    </div>
+                                            
+                                    <OrderDetailsModal
+                                        isOpen={isModalOpen}
+                                        onClose={() => setIsModalOpen(false)}
+                                        order={selectedOrder}
+                                    />
                                 </div>
-
-                                <OrderDetailsModal
-                                  isOpen={isModalOpen}
-                                  onClose={() => setIsModalOpen(false)}
-                                  order={selectedOrder}
-                                />
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 bg-gray-50 border border-gray-200 rounded-2xl">
+                                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                                    <ShoppingBag size={32} className="text-gray-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">No Orders Yet</h3>
+                                <p className="text-gray-500 text-center px-4">
+                                    You don’t have any orders at the moment. Once customers start placing orders, they will appear here for you to manage.
+                                </p>
+                                <button
+                                    className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors"
+                                    onClick={() => setActiveTab('menu')}
+                                >
+                                    Explore Menu
+                                </button>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             ) : (

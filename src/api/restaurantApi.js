@@ -214,3 +214,25 @@ export const createOffer = async (offerData) => {
         throw err;
     }
 }
+
+export const deleteOffer = async (offerId) => {
+    try{
+        const res = await axiosInstance.delete(`/offer/delete/${offerId}`);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in deleteOffer: ", err);
+        throw err;
+    }
+}
+
+export const toggleOffer = async (offerId) => {
+    try{
+        const res = await axiosInstance.put(`/offer/status/${offerId}`);
+        return res.data;
+    }
+    catch(err){
+        console.log("Error in toggleOffer: ", err);
+        throw err;
+    }
+}

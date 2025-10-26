@@ -240,7 +240,7 @@ const RestaurantDashboardPage = () => {
         switch (activeTab) {
             case 'overview': return <Overview setActiveTab={setActiveTab} />;
             case 'menu': return <MenuManagement />;
-            case 'orders': return <Orders />;
+            case 'orders': return <Orders setActiveTab={setActiveTab} />;
             case 'offers': return <Offers />;
             case 'analytics': return <Analytics dashboardStats={dashboardStats} trendingItems={trendingItems} />;
             case 'info': return <RestaurantInfo />;

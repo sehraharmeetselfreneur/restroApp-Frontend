@@ -126,6 +126,137 @@ const Overview = ({ setActiveTab }) => {
         const todayDay = today.toISOString().split("T")[0];
         return orderDay === todayDay;
     });
+    const todayRevenue = todayOrders.reduce((total, order) => {
+        return total + (order.finalAmount || 0);
+    }, 0);
+    const allOrders = user?.orders || [];
+    const totalRevenue = allOrders.reduce((total, order) => total + (order.finalAmount || 0), 0);
+    const avgOrderValue = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
+    const itemSales = {};
+    allOrders.forEach((order) => {
+        order.items?.forEach((item) => {
+            const name = item.foodItem?.name || "Unknown Item";
+            itemSales[name] = (itemSales[name] || 0) + (item.quantity || 1);
+        });
+    });
+    let topSellingItem = "N/A";
+    if (Object.keys(itemSales).length > 0) {
+        topSellingItem = Object.keys(itemSales).reduce((a, b) =>
+            itemSales[a] > itemSales[b] ? a : b
+        );
+    }
+
+    const getOrderChangePercent = () => {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        const todayStr = today.toISOString().split("T")[0];
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+        // Filter today's orders
+        const todayOrders = user.orders.filter((order) => {
+            const orderDate = new Date(order.createdAt).toISOString().split("T")[0];
+            return orderDate === todayStr;
+        });
+
+        // Filter yesterday's orders
+        const yesterdayOrders = user.orders.filter((order) => {
+            const orderDate = new Date(order.createdAt).toISOString().split("T")[0];
+            return orderDate === yesterdayStr;
+        });
+
+        // Calculate percentage change
+        const todayCount = todayOrders.length;
+        const yesterdayCount = yesterdayOrders.length;
+
+        let orderChangePercent = 0;
+        if (yesterdayCount === 0 && todayCount > 0) {
+            orderChangePercent = 100; // full increase if no orders yesterday
+        } else if (yesterdayCount > 0) {
+            orderChangePercent = ((todayCount - yesterdayCount) / yesterdayCount) * 100;
+        }
+
+        // Round off
+        orderChangePercent = Math.round(orderChangePercent);
+
+        return orderChangePercent;
+    }
+    const calculateRevenueChangePercent = (orders = user?.orders) => {
+        if (!Array.isArray(orders) || orders.length === 0) return 0;
+
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        const formatDate = (date) => date.toISOString().split("T")[0];
+
+        const todayStr = formatDate(today);
+        const yesterdayStr = formatDate(yesterday);
+
+        // Filter orders by day
+        const todayOrders = orders.filter(
+            (order) => formatDate(new Date(order.createdAt)) === todayStr
+        );
+
+        const yesterdayOrders = orders.filter(
+            (order) => formatDate(new Date(order.createdAt)) === yesterdayStr
+        );
+
+        // Calculate revenue
+        const todayRevenue = todayOrders.reduce((total, order) => total + (order.totalAmount || 0), 0);
+        const yesterdayRevenue = yesterdayOrders.reduce((total, order) => total + (order.totalAmount || 0), 0);
+
+        // Calculate percentage change
+        let percentChange = 0;
+
+        if (yesterdayRevenue === 0 && todayRevenue > 0) {
+            percentChange = 100; // full increase if no revenue yesterday
+        } else if (yesterdayRevenue > 0) {
+            percentChange = ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
+        }
+
+        return Math.round(percentChange);
+    }
+
+    const calculatePeakHours = (orders = user?.orders, mode = "count") => {
+        if (!Array.isArray(orders) || orders.length === 0) return "No data";
+          
+        // Initialize 24-hour slots
+        const hourlyStats = Array(24).fill(0);
+
+        orders.forEach((order) => {
+            const hour = new Date(order.createdAt).getHours();
+            if (mode === "revenue") {
+                hourlyStats[hour] += order.totalAmount || 0;
+            } else {
+                hourlyStats[hour]++;
+            }
+        });
+      
+        // Find the 2-hour peak range
+        let maxValue = 0;
+        let peakStartHour = 0;
+      
+        for (let i = 0; i < 23; i++) {
+            const twoHourValue = hourlyStats[i] + hourlyStats[i + 1];
+            if (twoHourValue > maxValue) {
+                maxValue = twoHourValue;
+                peakStartHour = i;
+            }
+        }
+      
+        // Helper to format hour -> "7 AM", "8 PM"
+        const formatHour = (hour) => {
+            const adjustedHour = hour % 12 === 0 ? 12 : hour % 12;
+            const suffix = hour >= 12 ? "PM" : "AM";
+            return `${adjustedHour} ${suffix}`;
+        };
+      
+        // Format final range (handles wrap-around like 11 PM–1 AM)
+        const endHour = (peakStartHour + 2) % 24;
+        return `${formatHour(peakStartHour)}-${formatHour(endHour)}`;
+    }
 
     // Separate incoming and accepted orders
     const incomingOrders = user?.orders?.filter(order => order.orderStatus === 'pending').slice(0,5) || [];
@@ -134,13 +265,12 @@ const Overview = ({ setActiveTab }) => {
 
     const dashboardStats = {
         todayOrders: todayOrders.length,
-        todayRevenue: 2840,
+        todayRevenue: todayRevenue,
         avgRating: user?.profile?.rating,
         totalCustomers: 856,
         repeatCustomers: 342,
-        avgOrderValue: 385,
-        peakHour: "7:00 PM",
-        topSellingItem: "Margherita Pizza"
+        avgOrderValue: avgOrderValue.toFixed(),
+        topSellingItem: topSellingItem
     };
 
     const trendingItems = [
@@ -204,7 +334,7 @@ const Overview = ({ setActiveTab }) => {
                                 <div>
                                     <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">Today's Orders</p>
                                     <p className="text-3xl font-bold text-blue-700 mt-1">{dashboardStats.todayOrders}</p>
-                                    <p className="text-sm text-blue-500 mt-1">+12% from yesterday</p>
+                                    <p className="text-sm text-blue-500 mt-1">+{getOrderChangePercent()}% from yesterday</p>
                                 </div>
                                 <div className="p-3 bg-blue-500 rounded-xl">
                                     <Package size={24} className="text-white" />
@@ -217,7 +347,7 @@ const Overview = ({ setActiveTab }) => {
                                 <div>
                                     <p className="text-sm font-medium text-green-600 uppercase tracking-wide">Today's Revenue</p>
                                     <p className="text-3xl font-bold text-green-700 mt-1">₹{dashboardStats.todayRevenue}</p>
-                                    <p className="text-sm text-green-500 mt-1">+8% from yesterday</p>
+                                    <p className="text-sm text-green-500 mt-1">+{calculateRevenueChangePercent()}% from yesterday</p>
                                 </div>
                                 <div className="p-3 bg-green-500 rounded-xl">
                                     <DollarSign size={24} className="text-white" />
@@ -245,7 +375,7 @@ const Overview = ({ setActiveTab }) => {
                                     <p className="text-lg font-bold text-purple-700 mt-1">
                                         {user?.profile?.isOpen ? 'Open' : 'Closed'}
                                     </p>
-                                    <p className="text-sm text-purple-500 mt-1">Peak: 7-9 PM</p>
+                                    <p className="text-sm text-purple-500 mt-1">Peak: {calculatePeakHours(user?.orders)}</p>
                                 </div>
                                 <div className="p-3 bg-purple-500 rounded-xl">
                                     <Activity size={24} className="text-white" />
@@ -259,7 +389,7 @@ const Overview = ({ setActiveTab }) => {
                         {/* Orders Section - Takes 2 columns */}
                         <div className="lg:col-span-2 space-y-6">
                             {/* Incoming Orders */}
-                            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                            <div className="bg-white rounded-2xl min-h-[20vh] border border-gray-200 p-6 shadow-sm">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-yellow-100 rounded-xl">
@@ -316,7 +446,7 @@ const Overview = ({ setActiveTab }) => {
                         </div>
 
                         {/* Accepted Orders */}
-                        <div className="bg-white lg:col-span-2 rounded-2xl border border-gray-200 p-6 shadow-sm">
+                        <div className="bg-white lg:col-span-2 rounded-2xl min-h-[20vh] border border-gray-200 p-6 shadow-sm">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-xl">
@@ -437,12 +567,16 @@ const Overview = ({ setActiveTab }) => {
                                 
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-600">Most Selling Item</span>
+                                        <span className="font-bold text-gray-800">{dashboardStats.topSellingItem}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Avg Order Value</span>
                                         <span className="font-bold text-gray-800">₹{dashboardStats.avgOrderValue}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Peak Hour</span>
-                                        <span className="font-bold text-gray-800">{dashboardStats.peakHour}</span>
+                                        <span className="font-bold text-gray-800">{calculatePeakHours()}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Repeat Customers</span>

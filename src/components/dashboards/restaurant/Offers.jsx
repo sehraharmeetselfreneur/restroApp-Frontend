@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../../../store/useAuthStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createOffer, getRestaurantProfile } from '../../../api/restaurantApi';
+import { createOffer, deleteOffer, getRestaurantProfile, toggleOffer } from '../../../api/restaurantApi';
 import toast from 'react-hot-toast';
 
 // Create/Edit Offer Modal
-const OfferModal = ({ user, isOpen, onClose, onSave, editingOffer, menuCategories, foodItems }) => {
+const OfferModal = ({ isOpen, onClose, onSave, editingOffer, menuCategories, foodItems }) => {
     const [offerData, setOfferData] = useState(editingOffer || {
         title: '',
         description: '',
@@ -384,6 +384,28 @@ export default function Offers() {
             toast.error(error.response.data?.message || "Something went wrong");
         }
     });
+    const deleteOfferMutation = useMutation({
+        mutationFn: deleteOffer,
+        onSuccess: async (data) => {
+            setUser(await getRestaurantProfile(), "Restaurant");
+            toast.success(data.message);
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
+    const toggleOfferStatusMutation = useMutation({
+        mutationFn: toggleOffer,
+        onSuccess: async (data) => {
+            toast.success(data.message);
+            setUser(await getRestaurantProfile(), "Restaurant");
+            queryClient.invalidateQueries({ queryKey: ["restaurantProfile"] });
+        },
+        onError: (error) => {
+            toast.error(error.response.data?.message || "Something went wrong");
+        }
+    });
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOffer, setEditingOffer] = useState(null);
@@ -405,15 +427,11 @@ export default function Offers() {
     };
 
     const handleDeleteOffer = async (id) => {
-        if (window.confirm('Are you sure you want to delete this offer?')) {
-            // TODO: Replace with actual API call
-            setOffers(offers.filter(o => o._id !== id));
-        }
+        deleteOfferMutation.mutate(id);
     };
 
     const toggleOfferStatus = async (id) => {
-        // TODO: Replace with actual API call
-        setOffers(offers.map(o => o._id === id ? { ...o, isActive: !o.isActive } : o));
+        toggleOfferStatusMutation.mutate(id);
     };
 
     const filteredOffers = offers.filter(offer => {
@@ -425,10 +443,10 @@ export default function Offers() {
         return matchesSearch && matchesFilter;
     });
 
-    const getCategoryNames = (categoryIds) => {
-    return categoryIds.map(id => {
-      const cat = user?.profile?.menu.find(c => c._id === id);
-      return cat ? cat.categoryName : '';
+    const getCategoryNames = (categories) => {
+    return categories.map(category => {
+      const cat = user?.profile?.menu.find(c => c._id === category._id);
+      return cat ? cat.name : '';
     }).filter(Boolean);
     };
 
@@ -594,9 +612,9 @@ export default function Offers() {
                                             </p>
                                             <div className="flex flex-wrap gap-2">
                                                 {offer.offerType === 'category' ? (
-                                                    getCategoryNames(offer.menuCategory).map((catName, idx) => (
+                                                    getCategoryNames(offer.menuCategory).map((cat, idx) => (
                                                         <span key={idx} className="px-3 py-1 bg-purple-200 text-purple-800 rounded-lg text-sm font-medium">
-                                                            {catName}
+                                                            {cat}
                                                         </span>
                                                     ))
                                                 ) : (
@@ -632,11 +650,11 @@ export default function Offers() {
                                             onClick={() => toggleOfferStatus(offer._id)}
                                             className={`flex-1 lg:flex-none px-4 py-3 rounded-xl font-semibold transition-all ${
                                                 offer.isActive
-                                                    ? 'bg-green-500 text-white hover:bg-green-600'
-                                                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                                    : 'bg-green-500 text-white hover:bg-green-600'
                                             }`}
                                         >
-                                            {offer.isActive ? 'Active' : 'Activate'}
+                                            {offer.isActive ? 'Deactivate' : 'Activate'}
                                         </button>
                                         <button
                                             onClick={() => handleEditOffer(offer)}
@@ -662,7 +680,6 @@ export default function Offers() {
               
             {/* Offer Modal */}
             <OfferModal
-                user={user}
                 isOpen={isModalOpen}
                 onClose={() => {
                   setIsModalOpen(false);
