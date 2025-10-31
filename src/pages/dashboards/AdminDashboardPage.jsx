@@ -175,6 +175,7 @@ const AdminDashboardPage = () => {
     const getAllOrdersMutation = useMutation({
         mutationFn: getAllOrders,
         onSuccess: (data) => {
+            console.log(data);
             setAllOrders(data.orders);
             setAllOrdersCount(data.ordersCount);
         },
@@ -213,6 +214,7 @@ const AdminDashboardPage = () => {
     }, []);
 
     const [filter, setFilter] = useState("");
+    const [orderStatusFilter, setOrderStatusFilter] = useState("");
     const [timeRange, setTimeRange] = useState("7d");
     const [activeTab, setActiveTab] = useState(() => {
         const saved = localStorage.getItem("adminDashboardActiveTab");
@@ -228,11 +230,13 @@ const AdminDashboardPage = () => {
     // Enhanced dummy data
     const stats = {
       totalRevenue: "₹2,45,680",
-      totalOrders: "1,847",
-      totalRestaurants: "156",
-      totalCustomers: "8,429",
-      activeOrders: "73",
-      completedToday: "234",
+      totalOrders: allOrders.length,
+      totalRestaurants: allRestaurants.length,
+      totalCustomers: allCustomers.length,
+      activeOrders: allOrders.filter(order => order.orderStatus !== "delivered" || order.orderStatus !== "cancelled").length,
+      completedToday: allOrders.filter(order => order.orderStatus === "delivered").length,
+      pendingOrders: allOrders.filter(order => order.orderStatus !== "delivered" || order.orderStatus !== "cancelled" || order.orderStatus !== "outForDelivery").length,
+      cancelledOrders: allOrders.filter(order => order.orderStatus === "cancelled").length,
       avgRating: "4.6",
       newRegistrations: "23"
     };
@@ -252,14 +256,35 @@ const AdminDashboardPage = () => {
 
     const getStatusBadge = (status) => {
       const styles = {
-        true: "bg-green-100 text-green-800 border-green-200",
-        false: "bg-red-100 text-red-800 border-red-200",
+        accepted: "bg-green-100 text-green-800 border-green-200",
+        cancelled: "bg-red-100 text-red-800 border-red-200",
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
         delivered: "bg-green-100 text-green-800 border-green-200",
         preparing: "bg-blue-100 text-blue-800 border-blue-200",
-        on_way: "bg-purple-100 text-purple-800 border-purple-200"
+        outForDelivery: "bg-purple-100 text-purple-800 border-purple-200"
       };
       return `px-2 py-1 text-xs font-medium rounded-full border ${styles[status] || styles.pending}`;
+    };
+
+    const formatDateTime = (isoString) => {
+        const date = new Date(isoString);
+        return date.toLocaleString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const formatOrderStatus = (status) => {
+        if (!status) return "";
+        const spaced = status.replace(/([A-Z])/g, " $1");
+        return spaced
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
+            .trim();
     };
 
     const sidebarItems = [
@@ -289,9 +314,10 @@ const AdminDashboardPage = () => {
             c.customerName.toLowerCase().includes(filter.toLowerCase())
           );
         case "orders":
-          return recentOrders.filter(o => 
-            o.customer.toLowerCase().includes(filter.toLowerCase()) ||
-            o.restaurant.toLowerCase().includes(filter.toLowerCase())
+          return allOrders.filter(order => 
+            order?.customer_id?.customerName?.toLowerCase().includes(filter.toLowerCase()) ||
+            order?.restaurant_id?.restaurantName?.toLowerCase().includes(filter.toLowerCase()) ||
+            order?.orderStatus?.toLowerCase() === orderStatusFilter.trim().toLowerCase()
           );
         default:
           return [];
@@ -336,7 +362,7 @@ const AdminDashboardPage = () => {
                 <Icon size={18} className={`transition-transform duration-200 ${activeTab === item.id ? '' : 'group-hover:scale-110'}`} />
                 <span className="font-medium">{item.label}</span>
                 {item.id === "orders" && (
-                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">73</span>
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{allOrdersCount}</span>
                 )}
                 {item.id === "verification" && unverifiedRestaurants.length > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unverifiedRestaurants.length}</span>
@@ -488,23 +514,23 @@ const AdminDashboardPage = () => {
                     <button className="text-orange-600 hover:text-orange-700 font-medium">View All</button>
                   </div>
                   <div className="space-y-4">
-                    {recentOrders.map((order, idx) => (
+                    {allOrders.slice(0, 5).map((order, idx) => (
                       <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl hover:bg-gray-100/50 transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-                            {order.id.slice(-2)}
+                            #{order._id.slice(-2)}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{order.customer}</p>
-                            <p className="text-sm text-gray-500">{order.restaurant}</p>
+                            <p className="font-medium text-gray-900">{order.customer_id.customerName}</p>
+                            <p className="text-sm text-gray-500">{order.restaurant_id.restaurantName}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">{order.amount}</p>
-                          <p className="text-sm text-gray-500">{order.time}</p>
+                        <div className="text-center">
+                          <p className="font-semibold text-gray-900">₹{order.finalAmount}</p>
+                          <p className="text-sm text-gray-500">{formatDateTime(order.createdAt)}</p>
                         </div>
-                        <span className={getStatusBadge(order.status)}>
-                          {order.status.replace('_', ' ')}
+                        <span className={getStatusBadge(order.orderStatus)}>
+                          {formatOrderStatus(order.orderStatus)}
                         </span>
                       </div>
                     ))}
@@ -1472,7 +1498,7 @@ const AdminDashboardPage = () => {
                       <Pause className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">12</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.pendingOrders}</p>
                       <p className="text-sm text-gray-600">Pending</p>
                     </div>
                   </div>
@@ -1483,7 +1509,7 @@ const AdminDashboardPage = () => {
                       <XCircle className="text-white" size={20} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">3</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.cancelledOrders}</p>
                       <p className="text-sm text-gray-600">Cancelled</p>
                     </div>
                   </div>
@@ -1503,11 +1529,11 @@ const AdminDashboardPage = () => {
                       className="w-80 pl-10 pr-4 py-3 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/80 backdrop-blur-sm"
                     />
                   </div>
-                  <select className="px-4 py-3 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/80">
+                  <select onChange={(e) => setOrderStatusFilter(e.target.value)} className="px-4 py-3 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/80">
                     <option>All Status</option>
                     <option>Pending</option>
                     <option>Preparing</option>
-                    <option>On Way</option>
+                    <option>Out for Delivery</option>
                     <option>Delivered</option>
                   </select>
                 </div>
@@ -1542,24 +1568,24 @@ const AdminDashboardPage = () => {
                       {filteredData().map((order, idx) => (
                         <tr key={idx} className="border-t border-orange-100/50 hover:bg-orange-50/30 transition-colors">
                           <td className="py-4 px-6">
-                            <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{order.id}</span>
+                            <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">#{order._id.slice(1, 6).toUpperCase()}</span>
                           </td>
                           <td className="py-4 px-6">
-                            <p className="font-medium text-gray-900">{order.customer}</p>
+                            <p className="font-medium text-gray-900">{order.customer_id.customerName}</p>
                           </td>
                           <td className="py-4 px-6">
-                            <p className="text-gray-900">{order.restaurant}</p>
+                            <p className="text-gray-900">{order.restaurant_id.restaurantName}</p>
                           </td>
                           <td className="py-4 px-6">
-                            <span className="font-medium text-green-600">{order.amount}</span>
+                            <span className="font-medium text-green-600">₹{order.finalAmount}</span>
                           </td>
                           <td className="py-4 px-6">
-                            <span className={getStatusBadge(order.status)}>
-                              {order.status.replace('_', ' ')}
+                            <span className={getStatusBadge(order.orderStatus)}>
+                              {formatOrderStatus(order.orderStatus)}
                             </span>
                           </td>
                           <td className="py-4 px-6">
-                            <span className="text-gray-500">{order.time}</span>
+                            <span className="text-gray-500">{formatDateTime(order.createdAt)}</span>
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-2">
